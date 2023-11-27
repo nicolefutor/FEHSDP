@@ -1,3 +1,5 @@
+//Max O'Ganian and Nicole Futoryansky
+
 #include "FEHLCD.h"
 #include <string.h>
 
@@ -5,7 +7,7 @@
 char state = 'm';
 
 //function decs
-void drawMenu();
+void drawMenu(), retMenu();
 
 int main() {
     //local vars to main
@@ -21,16 +23,21 @@ int main() {
         }
         else if(state == 't'){
             //placeholder
-            LCD.Write("PLAYING TIMED");
+            LCD.WriteAt("PLAYING TIMED", 100 ,20);
         }
         else if(state == 'i'){
             //placeholder
-            LCD.Write("HERES HOW TO PLAY THE GAME");
+            LCD.WriteAt("HERES HOW TO PLAY THE GAME", 20, 20);
         }
         else if(state == 'e'){
             running = false;
         }
         
+        //for all exept the menu, be able to return to the menu
+        if (state != 'm'){
+            retMenu();
+        }
+
         //only update lcd in one place
         LCD.Update();
     }
@@ -43,7 +50,7 @@ void drawMenu(){
     float x, y;
 
     //draw the options to the screen
-    LCD.SetBackgroundColor(BLACK);
+    LCD.Clear(BLACK);
     LCD.WriteAt("Choose an Option", wordX, 30);
     LCD.WriteAt("------PLAY------", wordX, playY);
     LCD.WriteAt("---PLAY TIMED---", wordX, timeY);
@@ -76,4 +83,22 @@ void drawMenu(){
 
     //dont continue until the mouse is released, to avoid issues with next steps
     while(LCD.Touch(&x,&y)){}
+}
+
+void retMenu(){
+    //variables to track mouse and to keep positions straight
+    int rectX = 2, rectY = 2, rectW = 16, rectH = 19;
+    float x, y;
+    
+    //draw the return button in the top left
+    LCD.DrawRectangle(rectX,rectY,rectW,rectH);
+    LCD.WriteAt("M", rectX+1,rectY+2);
+
+    //get the postion of the touch, use if pressed
+    if(LCD.Touch(&x, &y)){
+        //if the mouse is clicked in the rectangle, go to the menu
+        if(x > rectX && x < (rectX + rectW) && y > rectY && y < (rectY + rectH)){
+            state = 'm';
+        }
+    }
 }
