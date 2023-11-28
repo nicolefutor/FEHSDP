@@ -5,12 +5,28 @@
 #include <math.h>
 #include <vector>
 
+//define constants
+#define SCREEN_WIDTH 319
+#define SCREEN_HEIGHT 239
 
 class Ball {
     private:
         float posX, posY, velX, velY;
+        int radius = 2;
     public:
         Ball(float px, float py, float vx, float vy);
+
+        //getters and setters
+        float getPosX();
+        void setPosX(float px);
+        float getPosY();
+        void setPosY(float py);
+        float getVelX();
+        void setVelX(float vx);
+        float getVelY();
+        void setVelY(float vy);
+        int getRadius();
+
 };
 
 class Board {
@@ -159,10 +175,53 @@ Ball::Ball(float px, float py, float vx, float vy) {
     velY = vy;
 }
 
-Board::Board() {
-
+float Ball::getPosX() {
+    return posX;
 }
 
-void Board::render () {
+void Ball::setPosX(float px) {
+    posX = px;
+} 
 
+float Ball::getPosY() {
+    return posX;
+}
+
+void Ball::setPosY(float py) {
+    posY = py;
+} 
+
+float Ball::getVelX() {
+    return velX;
+}
+
+void Ball::setVelX(float vx) {
+    velX = vx;
+} 
+
+float Ball::getVelY() {
+    return velX;
+}
+
+void Ball::setVelY(float vy) {
+    velY = vy;
+} 
+
+int Ball::getRadius() {
+    return radius;
+}
+
+
+Board::Board() {
+    //for now, initalize balls at arbitrary positions
+    for (int i = 0; i < 16; i++) {
+        Ball b((SCREEN_HEIGHT / 16)*i, (SCREEN_HEIGHT / 16)*i, 0, 0);
+    }
+}
+
+void Board::render() {
+    // for (int i = 0; i < balls.size(); i++) {
+    //     LCD.WriteLine("in render");
+    //     LCD.FillCircle(balls.at(i).getPosX(), balls.at(i).getPosY(), balls.at(i).getRadius());
+    // }
 }
