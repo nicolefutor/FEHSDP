@@ -12,10 +12,12 @@
 class Ball {
     private:
         float posX, posY, velX, velY;
-        int radius = 10;
+        int radius = 5;
+        int radius = 5;
     public:
         Ball(float px, float py, float vx, float vy);
-
+        void render();
+        void render();
         //getters and setters
         float getPosX();
         void setPosX(float px);
@@ -188,6 +190,10 @@ void Ball::update() {
     posY+=velY;
 }
 
+void Ball::render() {
+    LCD.FillCircle((int) posX, (int) posY, (int) radius);
+}
+
 float Ball::getPosX() {
     return posX;
 }
@@ -226,15 +232,11 @@ int Ball::getRadius() {
 
 
 Board::Board() {
-    //for now, initalize balls at arbitrary positions
-    for (int i = 0; i < 16; i++) {
-        Ball b((SCREEN_HEIGHT / 16)*i, (SCREEN_HEIGHT / 16)*i, 0, 0);
-    }
+
 }
 
 void Board::render() {
-    // for (int i = 0; i < balls.size(); i++) {
-    //     LCD.WriteLine("in render");
-    //     LCD.FillCircle(balls.at(i).getPosX(), balls.at(i).getPosY(), balls.at(i).getRadius());
-    // }
+    for (int i = 0; i < balls.size(); i++) {
+       balls.at(i).render();
+    }
 }
