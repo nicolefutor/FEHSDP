@@ -5,6 +5,7 @@
 #include <math.h>
 #include <vector>
 
+
 class Ball {
     private:
         float posX, posY, velX, velY;
@@ -21,7 +22,7 @@ class Board {
 };
 
 //global vars
-char state = 'm';
+char state = 'm';       
 
 //function decs
 void drawMenu(), retMenu(), playing();
@@ -122,20 +123,28 @@ void retMenu(){
     }
 }
 
-void playing() {
-    int circX = 100, circY = 100, circR = 20;
-    float x, y;
 
-    LCD.DrawCircle(circX, circY, circR);
+void playing() {   
 
-    LCD.Touch(&x,&y);
+    //float hyp = dist(ball1.x, y, x1, y1);
 
-    float hyp = dist(circX, circY, x, y);
-    if (hyp < circR){
-        printf("%f\n", hyp);
-    }
+    //if (hyp < 2*r){
 
+    //}
+    //else{
+        //x = x + Vx;
+        //y+=Vy;
+
+        //x1+=Vx1;
+        //y1+=Vy1;
+    //}
+
+    //int dX = x, dY = y, dX1 = x1, dY1 = y1;
+
+    //LCD.DrawCircle(dX, dY, r);
+    //LCD.DrawCircle(dX1, dY1, r);
 }
+
 
 float dist(float x, float y, float x1, float y1){
     //calculate the magnitude of the diatance between two points
@@ -154,6 +163,6 @@ Board::Board() {
 
 }
 
-void Board::render() {
+void Board::render () {
 
 }
