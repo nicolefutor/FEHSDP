@@ -12,7 +12,7 @@
 class Ball {
     private:
         float posX, posY, velX, velY;
-        int radius = 2;
+        int radius = 10;
     public:
         Ball(float px, float py, float vx, float vy);
 
@@ -26,6 +26,9 @@ class Ball {
         float getVelY();
         void setVelY(float vy);
         int getRadius();
+
+        //updates position
+        void update();
 
 };
 
@@ -41,12 +44,15 @@ class Board {
 char state = 'm';       
 
 //function decs
-void drawMenu(), retMenu(), playing();
+void drawMenu(), retMenu(), playing(Ball&, Ball&);
 float dist(float, float, float, float);
 
 int main() {
     //local vars to main
     bool running = true;
+
+    Ball ball1 = Ball(100, 100, 1, 1);
+    Ball ball2 = Ball(200, 250, -1, -1);
 
     while (running) {
         if(state == 'm'){
@@ -55,7 +61,7 @@ int main() {
         else if(state == 'p'){
             //placeholder
             LCD.WriteAt("PLAYING", 100, 20);
-            playing();
+            playing(ball1, ball2);
         }
         else if(state == 't'){
             //placeholder
@@ -140,25 +146,27 @@ void retMenu(){
 }
 
 
-void playing() {   
+void playing(Ball& b1, Ball& b2) {   
 
-    //float hyp = dist(ball1.x, y, x1, y1);
+    float hyp = dist(b1.getPosX(), b1.getPosY(), b2.getPosX(), b2.getPosY());
+    
+    if (hyp < b1.getRadius()*2){
+        float tX = b2.getVelX();
+        float tY = b2.getVelY();
 
-    //if (hyp < 2*r){
+        b2.setVelX(b1.getVelX());
+        b2.setVelY(b1.getVelY());
 
-    //}
-    //else{
-        //x = x + Vx;
-        //y+=Vy;
+        b1.setVelX(tX);
+        b1.setVelY(tY);
+    }
+    
+    b1.update();
+    b2.update();
 
-        //x1+=Vx1;
-        //y1+=Vy1;
-    //}
-
-    //int dX = x, dY = y, dX1 = x1, dY1 = y1;
-
-    //LCD.DrawCircle(dX, dY, r);
-    //LCD.DrawCircle(dX1, dY1, r);
+    LCD.Clear(BLACK);
+    LCD.DrawCircle((int) b1.getPosX(), (int) b1.getPosY(), (int) b1.getRadius());
+    LCD.DrawCircle((int) b2.getPosX(), (int) b2.getPosY(), (int) b2.getRadius());
 }
 
 
@@ -173,6 +181,11 @@ Ball::Ball(float px, float py, float vx, float vy) {
     posY = py;
     velX = vx;
     velY = vy;
+}
+
+void Ball::update() {
+    posX+=velX;
+    posY+=velY;
 }
 
 float Ball::getPosX() {
