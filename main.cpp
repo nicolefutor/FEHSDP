@@ -3,6 +3,22 @@
 #include "FEHLCD.h"
 #include <string.h>
 #include <math.h>
+#include <vector>
+
+class Ball {
+    private:
+        float posX, posY, velX, velY;
+    public:
+        Ball(float px, float py, float vx, float vy);
+};
+
+class Board {
+    private:
+        std::vector<Ball> balls;
+    public:
+        Board();
+        void render();
+};
 
 //global vars
 char state = 'm';
@@ -125,4 +141,19 @@ float dist(float x, float y, float x1, float y1){
     //calculate the magnitude of the diatance between two points
     float hyp = sqrt(pow(abs(x1-x), 2.0) + pow(abs(y1-y), 2.0));
     return hyp;
+}
+
+Ball::Ball(float px, float py, float vx, float vy) {
+    posX = px;
+    posY = py;
+    velX = vx;
+    velY = vy;
+}
+
+Board::Board() {
+
+}
+
+void Board::render() {
+
 }
