@@ -2,12 +2,14 @@
 
 #include "FEHLCD.h"
 #include <string.h>
+#include <math.h>
 
 //global vars
 char state = 'm';
 
 //function decs
-void drawMenu(), retMenu();
+void drawMenu(), retMenu(), playing();
+float dist(float, float, float, float);
 
 int main() {
     //local vars to main
@@ -20,6 +22,7 @@ int main() {
         else if(state == 'p'){
             //placeholder
             LCD.WriteAt("PLAYING", 100, 20);
+            playing();
         }
         else if(state == 't'){
             //placeholder
@@ -101,4 +104,25 @@ void retMenu(){
             state = 'm';
         }
     }
+}
+
+void playing() {
+    int circX = 100, circY = 100, circR = 20;
+    float x, y;
+
+    LCD.DrawCircle(circX, circY, circR);
+
+    LCD.Touch(&x,&y);
+
+    float hyp = dist(circX, circY, x, y);
+    if (hyp < circR){
+        printf("%f\n", hyp);
+    }
+
+}
+
+float dist(float x, float y, float x1, float y1){
+    //calculate the magnitude of the diatance between two points
+    float hyp = sqrt(pow(abs(x1-x), 2.0) + pow(abs(y1-y), 2.0));
+    return hyp;
 }
