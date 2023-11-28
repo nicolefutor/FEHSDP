@@ -13,10 +13,8 @@ class Ball {
     private:
         float posX, posY, velX, velY;
         int radius = 5;
-        int radius = 5;
     public:
         Ball(float px, float py, float vx, float vy);
-        void render();
         void render();
         //getters and setters
         float getPosX();
