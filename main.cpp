@@ -45,7 +45,6 @@ class Board {
         std::vector<Ball> balls;
         Board();
         void render();
-        std::vector<Ball> balls;
 
         //checks for collisions with the walls
         void checkWalls();
@@ -165,8 +164,8 @@ void playing(Board& board, bool *hap) {
     board.update();
 
     board.twoColl(&(*hap), 1, 14);
-
     board.render();
+    board.checkWalls();
 
     //printf("yPer = %f\n", b1.getPosX());
     // LCD.Clear(BLACK);
@@ -303,37 +302,37 @@ int Ball::getRadius() {
 
 //initalize
 Board::Board() {
-    Ball rb1 = Ball(200, 80, 0, 0, Red);
+    Ball rb1 = Ball(200, 150, 0, 0, Red);
     balls.push_back(rb1);
-    Ball rb2 = Ball(200, 95, 0, 0, Red);
+    Ball rb2 = Ball(211, 156, 0, 0, Red);
     balls.push_back(rb2);
-    Ball rb3 = Ball(200, 110, 0, 0, Red);
+    Ball rb3 = Ball(222, 138, 0, 0, Red);
     balls.push_back(rb3);
-    Ball rb4 = Ball(200, 125, 0, 0, Red);
+    Ball rb4 = Ball(233, 144, 0, 0, Red);
     balls.push_back(rb4);
-    Ball rb5 = Ball(200, 140, 0, 0, Red);
+    Ball rb5 = Ball(233, 168, 0, 0, Red);
     balls.push_back(rb5);
-    Ball rb6 = Ball(200, 165, 0, 0, Red);
+    Ball rb6 = Ball(244, 126, 0, 0, Red);
     balls.push_back(rb6);
-    Ball rb7 = Ball(200, 140, 0, 0, Red);
+    Ball rb7 = Ball(244, 162, 0, 0, Red);
     balls.push_back(rb7);
-    Ball bb1 = Ball(250, 80, 0, 0, Blue);
+    Ball bb1 = Ball(211, 144, 0, 0, Blue);
     balls.push_back(bb1);
-    Ball bb2 = Ball(250, 95, 0, 0, Blue);
+    Ball bb2 = Ball(222, 162, 0, 0, Blue);
     balls.push_back(bb2);
-    Ball bb3 = Ball(250, 110, 0, 0, Blue);
+    Ball bb3 = Ball(233, 156, 0, 0, Blue);
     balls.push_back(bb3);
-    Ball bb4 = Ball(250, 125, 0, 0, Blue);
+    Ball bb4 = Ball(233, 132, 0, 0, Blue);
     balls.push_back(bb4);
-    Ball bb5 = Ball(250, 140, 0, 0, Blue);
+    Ball bb5 = Ball(244, 138, 0, 0, Blue);
     balls.push_back(bb5);
-    Ball bb6 = Ball(250, 165, 0, 0, Blue);
+    Ball bb6 = Ball(244, 150, 0, 0, Blue);
     balls.push_back(bb6);
-    Ball bb7 = Ball(250, 140, 0, 0, Blue);
+    Ball bb7 = Ball(244, 174, 0, 0, Blue);
     balls.push_back(bb7);
-    Ball cueBall = Ball(150, 120, .20, 0, Cue);
+    Ball cueBall = Ball(100, 150, 0, 0, Cue);
     balls.push_back(cueBall);
-    Ball eightBall = Ball(150, 150, 0, 0, Eight);
+    Ball eightBall = Ball(222, 150, 0, 0, Eight);
     balls.push_back(eightBall);
 }
 
