@@ -42,6 +42,7 @@ class Board {
     //private:
         
     public:
+        std::vector<Ball> balls;
         Board();
         void render();
         std::vector<Ball> balls;
@@ -375,4 +376,12 @@ void Board::render() {
 }
 
 void Board::checkWalls() {
+    for (int i = 0; i < balls.size(); i++) {
+        if (balls.at(i).getPosX() - (balls.at(i).getRadius()+1) < 11 || balls.at(i).getPosX()+ (balls.at(i).getRadius()+1) > 309) {
+        balls.at(i).setVelX(balls.at(i).getVelX()*(-1));
+        }
+        if (balls.at(i).getPosY()- (balls.at(i).getRadius()+1) < 76 || balls.at(i).getPosY()+ (balls.at(i).getRadius()+1) > 224) {
+            balls.at(i).setVelY(balls.at(i).getVelY()*(-1));
+        }
+    }
 }
