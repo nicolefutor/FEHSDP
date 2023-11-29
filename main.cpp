@@ -39,31 +39,33 @@ class Ball {
 };
 
 class Board {
-    private:
-        std::vector<Ball> balls;
+    //private:
+        
     public:
         Board();
         void render();
+        std::vector<Ball> balls;
 
         //checks for collisions with the walls
         void checkWalls();
+
+        void twoColl(bool*, int, int);
+        void update();
 };
 
 //global vars
 char state = 'm';       
 
 //function decs
-void drawMenu(), retMenu(), playing(Ball&, Ball&, bool*);
+void drawMenu(), retMenu(), playing(Board&, bool*);
 float dist(float, float, float, float);
 
 int main() {
     //local vars to main
     bool running = true;
     bool hap = false;
-    
-    //intit all ball objects
-    Ball ball1 = Ball(190, 100, 0, 1.0);
-    Ball ball2 = Ball(200, 200, 0, -.20);
+
+    Board board = Board();
 
     while (running) {
         if(state == 'm'){
@@ -72,7 +74,7 @@ int main() {
         else if(state == 'p'){
             //placeholder
             // LCD.WriteAt("PLAYING", 100, 20);
-            playing(ball1, ball2);
+            playing(board, &hap);
         }
         else if(state == 't'){
             //placeholder
@@ -157,23 +159,38 @@ void retMenu(){
 }
 
 
-void playing(Ball& b1, Ball& b2, bool *hap) {   
+void playing(Board& board, bool *hap) {   
 
-    float hyp = dist(b1.getPosX(), b1.getPosY(), b2.getPosX(), b2.getPosY()), x, y;
+    board.update();
+
+    board.twoColl(&(*hap), 1, 14);
+
+    board.render();
+
+    //printf("yPer = %f\n", b1.getPosX());
+    // LCD.Clear(BLACK);
+    // b1.render();
+    // b2.render();  
+    
+}
+
+void Board::twoColl(bool *hap, int b1, int b2){
+    
+    float hyp = dist(balls.at(b1).getPosX(), balls.at(b1).getPosY(), balls.at(b2).getPosX(), balls.at(b2).getPosY()), x, y;
     //printf("%i\n", *hap);
     
     //LCD.Touch(&x, &y);
 
-    if (hyp < b1.getRadius()*2 && *hap == false){
+    if (hyp < balls.at(b1).getRadius()*2 && *hap == false){
         *hap = true;
         printf("INSIDE\n");
         float V1x, V2x, V1y, V2y;
         
-        float mag1 = sqrt(pow(b1.getVelX(), 2.0) + pow(b1.getVelY(), 2.0));
-        float mag2 = sqrt(pow(b2.getVelX(), 2.0) + pow(b2.getVelY(), 2.0));
+        float mag1 = sqrt(pow(balls.at(b1).getVelX(), 2.0) + pow(balls.at(b1).getVelY(), 2.0));
+        float mag2 = sqrt(pow(balls.at(b2).getVelX(), 2.0) + pow(balls.at(b2).getVelY(), 2.0));
         
-        float deltX = abs(b1.getPosX() - b2.getPosX());
-        float deltY = abs(b1.getPosY() - b2.getPosY());
+        float deltX = abs(balls.at(b1).getPosX() - balls.at(b2).getPosX());
+        float deltY = abs(balls.at(b1).getPosY() - balls.at(b2).getPosY());
 
         //float perX = acos(deltX/hyp);
 
@@ -191,31 +208,18 @@ void playing(Ball& b1, Ball& b2, bool *hap) {
         V1y = -1*perY*mag2;
         V2y = 1*perY*mag1;
 
-        b1.setVelX(V1x);
-        b2.setVelX(V2x);
+        balls.at(b1).setVelX(V1x);
+        balls.at(b2).setVelX(V2x);
 
-        b1.setVelY(V1y);
-        b2.setVelY(V2y);
+        balls.at(b1).setVelY(V1y);
+        balls.at(b2).setVelY(V2y);
     }
     
     //printf("xPer = %f\n", perX);
-    //printf("yPer = %f\n", scalY);
+   
 
     //b1.setPosX(x);
     //b1.setPosY(y);
-
-    b1.update();
-    b2.update();
-
-    // LCD.Clear(BLACK);
-    // b1.render();
-    // b2.render();
-    
-
-    Board board = Board();
-    board.render();
-   
-    
 }
 
 
@@ -326,10 +330,16 @@ Board::Board() {
     balls.push_back(bb6);
     Ball bb7 = Ball(250, 140, 0, 0, Blue);
     balls.push_back(bb7);
-    Ball cueBall = Ball(150, 120, 0, 0, Cue);
+    Ball cueBall = Ball(150, 120, .20, 0, Cue);
     balls.push_back(cueBall);
     Ball eightBall = Ball(150, 150, 0, 0, Eight);
     balls.push_back(eightBall);
+}
+
+void Board::update(){
+    for(int i = 0; i < balls.size(); i++){
+        balls.at(i).update();
+    }
 }
 
 //Draws the board and all of the balls on it
