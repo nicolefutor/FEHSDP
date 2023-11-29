@@ -45,7 +45,6 @@ class Board {
     //private:
         
     public:
-        std::vector<Ball> balls;
         Board();
         void render();
         std::vector<Ball> balls;
@@ -249,7 +248,7 @@ void Board::twoColl(int b1, int b2){
     if (hyp > balls.at(b1).getRadius()*2 && balls.at(b1).hap == true && balls.at(b2).hap == true){
         balls.at(b1).hap = false;
         balls.at(b2).hap = false;
-        printf("Outside\n");
+        //printf("Outside\n");
         //running = false;
     }
     //printf("hyp = %f\n", hyp);
@@ -412,7 +411,7 @@ void Board::render() {
 }
 
 void Board::checkWalls() {
-    for (int i = 0; i < balls.size(); i++) {
+for (int i = 0; i < balls.size(); i++) {
         if (balls.at(i).getPosX() - (balls.at(i).getRadius()+1) < 11 || balls.at(i).getPosX()+ (balls.at(i).getRadius()+1) > 309) {
         balls.at(i).setVelX(balls.at(i).getVelX()*(-1));
         }
