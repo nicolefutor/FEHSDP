@@ -32,6 +32,9 @@ class Ball {
         void setVelY(float vy);
         int getRadius();
 
+        //keeps the collision only happening only once
+        bool hap = false;
+
         //updates position
         void update();
 
@@ -49,7 +52,7 @@ class Board {
         //checks for collisions with the walls
         void checkWalls();
 
-        void twoColl(bool*, int, int);
+        void twoColl(int, int);
         void update();
 };
 
@@ -57,12 +60,14 @@ class Board {
 char state = 'm';       
 
 //function decs
-void drawMenu(), retMenu(), playing(Board&, bool*);
+void drawMenu(), retMenu(), playing(Board&);
 float dist(float, float, float, float);
+
+bool running = true;
 
 int main() {
     //local vars to main
-    bool running = true;
+    
     bool hap = false;
 
     Board board = Board();
@@ -74,7 +79,7 @@ int main() {
         else if(state == 'p'){
             //placeholder
             // LCD.WriteAt("PLAYING", 100, 20);
-            playing(board, &hap);
+            playing(board);
         }
         else if(state == 't'){
             //placeholder
@@ -159,12 +164,17 @@ void retMenu(){
 }
 
 
-void playing(Board& board, bool *hap) {   
+void playing(Board& board) {   
 
     board.update();
 
-    board.twoColl(&(*hap), 1, 14);
-
+    for(int i = 0; i < board.balls.size(); i++){
+        for(int j = 0; j < board.balls.size(); j++){
+            if(i != j){
+                board.twoColl(i, j);
+            }
+        }
+    }
     board.render();
 
     //printf("yPer = %f\n", b1.getPosX());
@@ -174,16 +184,18 @@ void playing(Board& board, bool *hap) {
     
 }
 
-void Board::twoColl(bool *hap, int b1, int b2){
+void Board::twoColl(int b1, int b2){
     
     float hyp = dist(balls.at(b1).getPosX(), balls.at(b1).getPosY(), balls.at(b2).getPosX(), balls.at(b2).getPosY()), x, y;
     //printf("%i\n", *hap);
     
     //LCD.Touch(&x, &y);
 
-    if (hyp < balls.at(b1).getRadius()*2 && *hap == false){
-        *hap = true;
-        printf("INSIDE\n");
+    if (hyp < balls.at(b1).getRadius()*2 && balls.at(b1).hap == false && balls.at(b2).hap == false){
+        balls.at(b1).hap = true;
+        balls.at(b2).hap = true;
+        
+        printf("INSIDE----------------------------------------------------\n");
         float V1x, V2x, V1y, V2y;
         
         float mag1 = sqrt(pow(balls.at(b1).getVelX(), 2.0) + pow(balls.at(b1).getVelY(), 2.0));
@@ -201,12 +213,30 @@ void Board::twoColl(bool *hap, int b1, int b2){
         float scalY = perY*(1.0/M_PI_2);
         
         //float perX = deltX/b1.getRadius();
+        
+        if(balls.at(b1).getPosX() < balls.at(b1).getPosX()){
+            V1x = -1*perX*mag2;
+        }else{
+            V1x = perX*mag2;
+        }
 
-        V1x = -1*perX*mag2;
-        V2x = 1*perX*mag1;
+        if(balls.at(b2).getPosX() < balls.at(b2).getPosX()){
+            V2x = -1*perX*mag1;
+        }else{
+            V2x = perX*mag1;
+        }
+        
+        if(balls.at(b1).getPosY() < balls.at(b1).getPosY()){
+            V1y = -1*perY*mag2;
+        }else{
+            V1y = perY*mag2;
+        }
 
-        V1y = -1*perY*mag2;
-        V2y = 1*perY*mag1;
+        if(balls.at(b2).getPosY() < balls.at(b2).getPosY()){
+            V2y = -1*perY*mag1;
+        }else{
+            V2y = perY*mag1;
+        }
 
         balls.at(b1).setVelX(V1x);
         balls.at(b2).setVelX(V2x);
@@ -215,7 +245,13 @@ void Board::twoColl(bool *hap, int b1, int b2){
         balls.at(b2).setVelY(V2y);
     }
     
-    //printf("xPer = %f\n", perX);
+    if (hyp > balls.at(b1).getRadius()*2 && balls.at(b1).hap == true && balls.at(b2).hap == true){
+        balls.at(b1).hap = false;
+        balls.at(b2).hap = false;
+        printf("Outside\n");
+        //running = false;
+    }
+    //printf("hyp = %f\n", hyp);
    
 
     //b1.setPosX(x);
@@ -314,7 +350,7 @@ Board::Board() {
     balls.push_back(rb5);
     Ball rb6 = Ball(200, 165, 0, 0, Red);
     balls.push_back(rb6);
-    Ball rb7 = Ball(200, 140, 0, 0, Red);
+    Ball rb7 = Ball(200, 200, 0, 0, Red);
     balls.push_back(rb7);
     Ball bb1 = Ball(250, 80, 0, 0, Blue);
     balls.push_back(bb1);
@@ -328,7 +364,7 @@ Board::Board() {
     balls.push_back(bb5);
     Ball bb6 = Ball(250, 165, 0, 0, Blue);
     balls.push_back(bb6);
-    Ball bb7 = Ball(250, 140, 0, 0, Blue);
+    Ball bb7 = Ball(250, 200, 0, 0, Blue);
     balls.push_back(bb7);
     Ball cueBall = Ball(150, 120, .20, 0, Cue);
     balls.push_back(cueBall);
