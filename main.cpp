@@ -53,15 +53,17 @@ class Board {
 char state = 'm';       
 
 //function decs
-void drawMenu(), retMenu(), playing(Ball&, Ball&);
+void drawMenu(), retMenu(), playing(Ball&, Ball&, bool*);
 float dist(float, float, float, float);
 
 int main() {
     //local vars to main
     bool running = true;
-
-    Ball ball1 = Ball(100, 100, 1, 1, Red);
-    Ball ball2 = Ball(200, 300, -2, -1, Blue);
+    bool hap = false;
+    
+    //intit all ball objects
+    Ball ball1 = Ball(190, 100, 0, 1.0);
+    Ball ball2 = Ball(200, 200, 0, -.20);
 
     while (running) {
         if(state == 'm'){
@@ -155,27 +157,59 @@ void retMenu(){
 }
 
 
-void playing(Ball& b1, Ball& b2) {   
+void playing(Ball& b1, Ball& b2, bool *hap) {   
 
-    // float hyp = dist(b1.getPosX(), b1.getPosY(), b2.getPosX(), b2.getPosY());
+    float hyp = dist(b1.getPosX(), b1.getPosY(), b2.getPosX(), b2.getPosY()), x, y;
+    //printf("%i\n", *hap);
     
-    // if (hyp < b1.getRadius()*2){
-    //     float tX = b2.getVelX();
-    //     float tY = b2.getVelY();
+    //LCD.Touch(&x, &y);
 
-    //     b2.setVelX(b1.getVelX());
-    //     b2.setVelY(b1.getVelY());
+    if (hyp < b1.getRadius()*2 && *hap == false){
+        *hap = true;
+        printf("INSIDE\n");
+        float V1x, V2x, V1y, V2y;
+        
+        float mag1 = sqrt(pow(b1.getVelX(), 2.0) + pow(b1.getVelY(), 2.0));
+        float mag2 = sqrt(pow(b2.getVelX(), 2.0) + pow(b2.getVelY(), 2.0));
+        
+        float deltX = abs(b1.getPosX() - b2.getPosX());
+        float deltY = abs(b1.getPosY() - b2.getPosY());
 
-    //     b1.setVelX(tX);
-    //     b1.setVelY(tY);
-    // }
+        //float perX = acos(deltX/hyp);
 
-    // b1.update();
-    // b2.update();
+        float perY = asin(deltY/hyp);
+        float perX = M_PI_2 - perY;
+
+        float scalX = perX*(1.0/M_PI_2);
+        float scalY = perY*(1.0/M_PI_2);
+        
+        //float perX = deltX/b1.getRadius();
+
+        V1x = -1*perX*mag2;
+        V2x = 1*perX*mag1;
+
+        V1y = -1*perY*mag2;
+        V2y = 1*perY*mag1;
+
+        b1.setVelX(V1x);
+        b2.setVelX(V2x);
+
+        b1.setVelY(V1y);
+        b2.setVelY(V2y);
+    }
+    
+    //printf("xPer = %f\n", perX);
+    //printf("yPer = %f\n", scalY);
+
+    //b1.setPosX(x);
+    //b1.setPosY(y);
+
+    b1.update();
+    b2.update();
 
     // LCD.Clear(BLACK);
-    // LCD.DrawCircle((int) b1.getPosX(), (int) b1.getPosY(), (int) b1.getRadius());
-    // LCD.DrawCircle((int) b2.getPosX(), (int) b2.getPosY(), (int) b2.getRadius());
+    // b1.render();
+    // b2.render();
     
 
     Board board = Board();
