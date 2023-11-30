@@ -46,6 +46,8 @@ class Board {
         
     public:
         std::vector<Ball> balls;
+        std::vector<Ball*> colBalls;
+
         Board();
         void render();
 
@@ -163,21 +165,27 @@ void retMenu(){
     }
 }
 
-
+  
 void playing(Board& board) {   
 
-    board.update();
 
-    for(int i = 0; i < board.balls.size(); i++){
-        for(int j = 0; j < board.balls.size(); j++){
-            if(i != j){
-                board.twoColl(i, j);
-            }
-        }
-    }
-    board.render();
+    // for(int i = 0; i < board.balls.size(); i++){
+    //     for(int j = 0; j < board.balls.size(); j++){
+    //         if(i != j && (board.balls.at(i).getVelX() != 0 || board.balls.at(i).getVelY() != 0)){
+    //             board.twoColl(i, j);
+    //         }
+    //     }
+    // }
+
+    
+    board.twoColl(1,1);
+
     board.checkWalls();
 
+    board.update();
+    
+    board.render();
+    
     //printf("yPer = %f\n", b1.getPosX());
     // LCD.Clear(BLACK);
     // b1.render();
@@ -185,78 +193,79 @@ void playing(Board& board) {
     
 }
 
-void Board::twoColl(int b1, int b2){
+void Board::twoColl(int b13, int b23){
     
-    float hyp = dist(balls.at(b1).getPosX(), balls.at(b1).getPosY(), balls.at(b2).getPosX(), balls.at(b2).getPosY()), x, y;
+    //float hyp = dist(balls.at(b1).getPosX(), balls.at(b1).getPosY(), balls.at(b2).getPosX(), balls.at(b2).getPosY());
+    
+    colBalls.clear();
+
+    /*This moves any collision out of the thing it collided with */
+    for(int i = 0; i < balls.size(); i++){
+        for(int j = 0; j < balls.size(); j++){
+            if(i != j){
+                //dist between balls
+                float hyp = dist(balls.at(i).getPosX(), balls.at(i).getPosY(), balls.at(j).getPosX(), balls.at(j).getPosY());
+                
+                if (hyp < balls.at(i).getRadius()*2){
+                    colBalls.push_back(&(balls.at(i)));
+                    colBalls.push_back(&(balls.at(j)));
+
+                    //find by how much the balls overlap
+                    float overlap = 0.5 * (hyp - balls.at(i).getRadius());
+                    
+                    //move ball 1 away from collision
+				    balls.at(i).setPosX(balls.at(i).getPosX() + (overlap * (balls.at(i).getPosX() - balls.at(j).getPosX()) / hyp));
+					balls.at(i).setPosY(balls.at(i).getPosY() + (overlap * (balls.at(i).getPosY() - balls.at(j).getPosY()) / hyp));
+
+					//move ball 2 away from collision
+					balls.at(j).setPosX(balls.at(j).getPosX() - (overlap * (balls.at(i).getPosX() - balls.at(j).getPosX()) / hyp));
+                    balls.at(j).setPosY(balls.at(j).getPosY() - (overlap * (balls.at(i).getPosY() - balls.at(j).getPosY()) / hyp));
+                    
+                }
+            }
+        }
+    }
     //printf("%i\n", *hap);
     
+    for(int i = 0; i < colBalls.size(); i+=2){
+        //these will save alot of typing
+        Ball* b1 = colBalls.at(i);
+        Ball* b2 = colBalls.at(i+1);
+
+        printf("COLISIIIIOOONNN\n");
+
+        float hyp = dist(b1->getPosX(), b1->getPosY(), b2->getPosX(), b2->getPosY());
+        
+
+        //this math from https://github.com/OneLoneCoder/Javidx9/blob/master/ConsoleGameEngine/BiggerProjects/Balls/OneLoneCoder_Balls1.cpp
+        float nx = (b2->getPosX() - b1->getPosX()) / hyp;
+	    float ny = (b2->getPosY() - b1->getPosY()) / hyp;
+
+        // Tangent
+        float tx = -ny;
+        float ty = nx;
+
+        // Dot Product Tangent
+        float dpTan1 = b1->getVelX() * tx + b1->getVelY() * ty;
+        float dpTan2 = b2->getVelX() * tx + b2->getVelY() * ty;
+
+        // Dot Product Normal
+        float dpNorm1 = b1->getVelX() * nx + b1->getVelY() * ny;
+        float dpNorm2 = b2->getVelX() * nx + b2->getVelY() * ny;
+
+        // Conservation of momentum in 1D
+        float m1 = (dpNorm2);
+        float m2 = (dpNorm1);
+
+        // Update ball velocities
+        b1->setVelX(tx * dpTan1 + nx * m1);
+        b1->setVelY(ty * dpTan1 + ny * m1);
+        b2->setVelX(tx * dpTan2 + nx * m2);
+        b2->setVelY(ty * dpTan2 + ny * m2);
+    }
     //LCD.Touch(&x, &y);
-
-    if (hyp < balls.at(b1).getRadius()*2 && balls.at(b1).hap == false && balls.at(b2).hap == false){
-        balls.at(b1).hap = true;
-        balls.at(b2).hap = true;
-        
-        printf("INSIDE----------------------------------------------------\n");
-        float V1x, V2x, V1y, V2y;
-        
-        float mag1 = sqrt(pow(balls.at(b1).getVelX(), 2.0) + pow(balls.at(b1).getVelY(), 2.0));
-        float mag2 = sqrt(pow(balls.at(b2).getVelX(), 2.0) + pow(balls.at(b2).getVelY(), 2.0));
-        
-        float deltX = abs(balls.at(b1).getPosX() - balls.at(b2).getPosX());
-        float deltY = abs(balls.at(b1).getPosY() - balls.at(b2).getPosY());
-
-        //float perX = acos(deltX/hyp);
-
-        float perY = asin(deltY/hyp);
-        float perX = M_PI_2 - perY;
-
-        float scalX = perX*(1.0/M_PI_2);
-        float scalY = perY*(1.0/M_PI_2);
-        
-        //float perX = deltX/b1.getRadius();
-        
-        if(balls.at(b1).getPosX() < balls.at(b1).getPosX()){
-            V1x = -1*perX*mag2;
-        }else{
-            V1x = perX*mag2;
-        }
-
-        if(balls.at(b2).getPosX() < balls.at(b2).getPosX()){
-            V2x = -1*perX*mag1;
-        }else{
-            V2x = perX*mag1;
-        }
-        
-        if(balls.at(b1).getPosY() < balls.at(b1).getPosY()){
-            V1y = -1*perY*mag2;
-        }else{
-            V1y = perY*mag2;
-        }
-
-        if(balls.at(b2).getPosY() < balls.at(b2).getPosY()){
-            V2y = -1*perY*mag1;
-        }else{
-            V2y = perY*mag1;
-        }
-
-        balls.at(b1).setVelX(V1x);
-        balls.at(b2).setVelX(V2x);
-
-        balls.at(b1).setVelY(V1y);
-        balls.at(b2).setVelY(V2y);
-    }
     
-    if (hyp > balls.at(b1).getRadius()*2 && balls.at(b1).hap == true && balls.at(b2).hap == true){
-        balls.at(b1).hap = false;
-        balls.at(b2).hap = false;
-        //printf("Outside\n");
-        //running = false;
-    }
-    //printf("hyp = %f\n", hyp);
-   
 
-    //b1.setPosX(x);
-    //b1.setPosY(y);
 }
 
 
@@ -367,10 +376,11 @@ Board::Board() {
     balls.push_back(bb6);
     Ball bb7 = Ball(244, 174, 0, 0, Blue);
     balls.push_back(bb7);
-    Ball cueBall = Ball(100, 150, 0, 0, Cue);
+    Ball cueBall = Ball(100, 150, 3.0, 0, Cue);
     balls.push_back(cueBall);
     Ball eightBall = Ball(222, 150, 0, 0, Eight);
     balls.push_back(eightBall);
+
 }
 
 void Board::update(){
