@@ -4,6 +4,7 @@
 #include <string.h>
 #include <math.h>
 #include <vector>
+#include <iostream>
 
 //define constants
 #define SCREEN_WIDTH 319
@@ -64,6 +65,7 @@ char state = 'm';
 //function decs
 void drawMenu(), retMenu(), playing(Board&);
 float dist(float, float, float, float);
+void takeInput(Board&);
 
 bool running = true;
 
@@ -177,14 +179,14 @@ void playing(Board& board) {
     //     }
     // }
 
-    
+    board.render();
+    takeInput(board);
     board.twoColl(1,1);
 
     board.checkWalls();
 
     board.update();
     
-    board.render();
     
     //printf("yPer = %f\n", b1.getPosX());
     // LCD.Clear(BLACK);
@@ -268,6 +270,43 @@ void Board::twoColl(int b13, int b23){
 
 }
 
+void takeInput(Board& board) {
+    float x,y;
+    int sMeterX = 117, sMeterY = 56, sMeterW = 125, sMeterH = 12;
+    int hitX = 255, hitY = 50, hitH = 21, hitW = 44;
+    int tableX = 11, tableY = 76, tableW, tableH;
+
+    Ball cueBall = board.balls.at(15);
+
+    LCD.WriteAt("Strength: ", 5, 55);
+    LCD.DrawRectangle(sMeterX, sMeterY, sMeterW, sMeterH);
+
+    LCD.DrawRectangle(hitX, hitY, hitW, hitH);
+    LCD.WriteAt("Hit", hitX+4, hitY+3);
+
+    //Wait for touchscreen press
+    while(!LCD.Touch(&x,&y));
+    //Wait for touchscreen release
+    while(LCD.Touch(&x,&y));
+    //if they press wihin the region of the strength meter
+    if (x > sMeterX && x < (sMeterX+sMeterW) && y > sMeterY && y < (sMeterY+sMeterH)) { 
+        LCD.SetFontColor(BLACK); //draw black over the old rectangle
+        LCD.FillRectangle(sMeterX+1, sMeterY+1, sMeterW-2, sMeterH-2);
+        LCD.SetFontColor(PURPLE); //draw a old rectangle up to where the user clicked in the strength meter
+        LCD.FillRectangle(sMeterX+1, sMeterY+1, x-sMeterX, sMeterH-2);
+        LCD.SetFontColor(WHITE); //set font color back to white
+    }
+    //if they press within the hit button
+    // else if () {
+
+    // }
+    //if they press within the pool table
+    // else if (x > ) {
+
+    // }
+
+
+}
 
 float dist(float x, float y, float x1, float y1){
     //calculate the magnitude of the diatance between two points
@@ -346,7 +385,7 @@ int Ball::getRadius() {
     return radius;
 }
 
-//initalize
+//initalize the balls at their starting positions
 Board::Board() {
     Ball rb1 = Ball(200, 150, 0, 0, Red);
     balls.push_back(rb1);
@@ -376,7 +415,7 @@ Board::Board() {
     balls.push_back(bb6);
     Ball bb7 = Ball(244, 174, 0, 0, Blue);
     balls.push_back(bb7);
-    Ball cueBall = Ball(100, 150, 3.0, 0, Cue);
+    Ball cueBall = Ball(100, 150, 0, 0, Cue);
     balls.push_back(cueBall);
     Ball eightBall = Ball(222, 150, 0, 0, Eight);
     balls.push_back(eightBall);
@@ -392,26 +431,26 @@ void Board::update(){
 //Draws the board and all of the balls on it
 void Board::render() {
     LCD.SetFontColor(SADDLEBROWN); //the brown border
-    LCD.FillRectangle(7, 72, 306, 156);
+    LCD.FillRectangle(7, 77, 306, 156);
     LCD.SetFontColor(DARKGREEN); //the green table
-    LCD.FillRectangle(11, 76, 298, 148);
+    LCD.FillRectangle(11, 81, 298, 148);
     LCD.SetFontColor(WHITE); //the player name labels
-    LCD.WriteAt("Player 1", 5, 5);
+    LCD.WriteAt("Player 1", 30, 5);
     LCD.WriteAt("Player 2", 190, 5);
-    LCD.DrawRectangle(109, 4, 17, 17); //the white boxes around the player colors
+    LCD.DrawRectangle(134, 4, 17, 17); //the white boxes around the player colors
     LCD.DrawRectangle(294, 4, 17, 17);
     LCD.SetFontColor(DARKBLUE); //the blue color box
-    LCD.FillRectangle(110, 5, 15, 15);
+    LCD.FillRectangle(135, 5, 15, 15);
     LCD.SetFontColor(MAROON); //the red color box
     LCD.FillRectangle(295, 5, 15, 15);
     //Draw pockets
     LCD.SetFontColor(BLACK);
-    LCD.FillCircle(9, 74, 8);
-    LCD.FillCircle(9, 225, 8);
-    LCD.FillCircle(310, 74, 8);
-    LCD.FillCircle(310, 225, 8);
-    LCD.FillCircle(160, 74, 8);
-    LCD.FillCircle(160, 225, 8);
+    LCD.FillCircle(9, 79, 8);
+    LCD.FillCircle(9, 230, 8);
+    LCD.FillCircle(310, 79, 8);
+    LCD.FillCircle(310, 230, 8);
+    LCD.FillCircle(160, 79, 8);
+    LCD.FillCircle(160, 230, 8);
 
     LCD.SetFontColor(WHITE); //set font color back to white
 
