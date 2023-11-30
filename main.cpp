@@ -4,6 +4,7 @@
 #include <string.h>
 #include <math.h>
 #include <vector>
+#include <iostream>
 
 //define constants
 #define SCREEN_WIDTH 319
@@ -68,6 +69,7 @@ void drawMenu(), retMenu(), playing(Board&, bool*), reset(Board&);
 float dist(float, float, float, float);
 
 bool play1 = true;
+void takeInput(Board&);
 
 bool running = true;
 
@@ -175,12 +177,12 @@ void retMenu(){
 void playing(Board& board, bool* play1) {   
 
     board.collisions();
-    
     board.checkWalls();
 
     board.update();
     
     board.render(*play1);
+    takeInput(board);
     
 }
 
@@ -260,10 +262,49 @@ void Board::collisions(){
         b1->setVelY(ty * dpTan1 + ny * dpNorm2);
         b2->setVelX(tx * dpTan2 + nx * dpNorm1);
         b2->setVelY(ty * dpTan2 + ny * dpNorm1);
-    } 
+    }
+    //LCD.Touch(&x, &y);
+    
 
 }
 
+void takeInput(Board& board) {
+    float x,y;
+    int sMeterX = 117, sMeterY = 56, sMeterW = 125, sMeterH = 12;
+    int hitX = 255, hitY = 50, hitH = 21, hitW = 44;
+    int tableX = 11, tableY = 76, tableW, tableH;
+
+    Ball cueBall = board.balls.at(15);
+
+    LCD.WriteAt("Strength: ", 5, 55);
+    LCD.DrawRectangle(sMeterX, sMeterY, sMeterW, sMeterH);
+
+    LCD.DrawRectangle(hitX, hitY, hitW, hitH);
+    LCD.WriteAt("Hit", hitX+4, hitY+3);
+
+    //Wait for touchscreen press
+    while(!LCD.Touch(&x,&y));
+    //Wait for touchscreen release
+    while(LCD.Touch(&x,&y));
+    //if they press wihin the region of the strength meter
+    if (x > sMeterX && x < (sMeterX+sMeterW) && y > sMeterY && y < (sMeterY+sMeterH)) { 
+        LCD.SetFontColor(BLACK); //draw black over the old rectangle
+        LCD.FillRectangle(sMeterX+1, sMeterY+1, sMeterW-2, sMeterH-2);
+        LCD.SetFontColor(PURPLE); //draw a old rectangle up to where the user clicked in the strength meter
+        LCD.FillRectangle(sMeterX+1, sMeterY+1, x-sMeterX, sMeterH-2);
+        LCD.SetFontColor(WHITE); //set font color back to white
+    }
+    //if they press within the hit button
+    // else if () {
+
+    // }
+    //if they press within the pool table
+    // else if (x > ) {
+
+    // }
+
+
+}
 
 float dist(float x, float y, float x1, float y1){
     //calculate the magnitude of the diatance between two points
@@ -357,7 +398,7 @@ int Ball::getRadius() {
     return radius;
 }
 
-//initalize
+//initalize the balls at their starting positions
 Board::Board() {
     Ball rb1 = Ball(200, 150, 0, 0, Red);
     balls.push_back(rb1);
@@ -403,9 +444,9 @@ void Board::update(){
 //Draws the board and all of the balls on it
 void Board::render(bool play1) {
     LCD.SetFontColor(SADDLEBROWN); //the brown border
-    LCD.FillRectangle(7, 72, 306, 156);
+    LCD.FillRectangle(7, 77, 306, 156);
     LCD.SetFontColor(DARKGREEN); //the green table
-    LCD.FillRectangle(11, 76, 298, 148);
+    LCD.FillRectangle(11, 81, 298, 148);
     LCD.SetFontColor(WHITE); //the player name labels
     if(play1){
         LCD.SetFontColor(GREEN);
@@ -424,12 +465,12 @@ void Board::render(bool play1) {
     LCD.FillRectangle(295, 5, 15, 15);
     //Draw pockets
     LCD.SetFontColor(BLACK);
-    LCD.FillCircle(9, 74, 8);
-    LCD.FillCircle(9, 225, 8);
-    LCD.FillCircle(310, 74, 8);
-    LCD.FillCircle(310, 225, 8);
-    LCD.FillCircle(160, 74, 8);
-    LCD.FillCircle(160, 225, 8);
+    LCD.FillCircle(9, 79, 8);
+    LCD.FillCircle(9, 230, 8);
+    LCD.FillCircle(310, 79, 8);
+    LCD.FillCircle(310, 230, 8);
+    LCD.FillCircle(160, 79, 8);
+    LCD.FillCircle(160, 230, 8);
 
     LCD.SetFontColor(WHITE); //set font color back to white
 
