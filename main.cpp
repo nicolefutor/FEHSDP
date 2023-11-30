@@ -52,6 +52,12 @@ class Board {
 
         void collisions();
         void update();
+
+        class Pocket{
+            public:
+                float x, y, r;
+                void render();
+        }
 };
 
 //global vars
@@ -168,8 +174,6 @@ void retMenu(){
   
 void playing(Board& board, bool* play1) {   
 
-    
-    
     board.collisions();
     
     board.checkWalls();
@@ -178,19 +182,14 @@ void playing(Board& board, bool* play1) {
     
     board.render(*play1);
     
-
-    
 }
 
 void reset(Board& board){
     board = Board();
-
 }
 
 void Board::collisions(){
     //This function handles all the collisions between balls
-    
-    
     colBalls.clear();
 
     /*This moves balls out from inside each other, so they are no longer collided, also adds any balls that have collided into an array
