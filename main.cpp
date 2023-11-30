@@ -1,4 +1,10 @@
 //Max O'Ganian and Nicole Futoryansky
+//scractches and the 8 ball
+//correct color bassed off start
+//win
+//timed - showing clock
+//credit screen
+
 
 #include "FEHLCD.h"
 #include <string.h>
@@ -10,10 +16,12 @@
 #define SCREEN_WIDTH 319
 #define SCREEN_HEIGHT 239
 
-#define FRIC .008
+//#define FRIC .008
+#define FRIC 0
+
 
 //enum for the type of the ball
-enum BallType {Blue, Red, Cue, Eight };
+enum BallType {Blue, Red, Cue, Eight};
 
 class Ball {
     private:
@@ -34,18 +42,31 @@ class Ball {
         float getVelY();
         void setVelY(float vy);
         int getRadius();
-
+        BallType getBallType();
         //updates position
         void update();
 };
 
+class Pocket {
+    public:
+        Pocket(float xI, float yI);
+        float x, y, r;
+        void render();
+};
+
+// class Player {
+//     public:
+//         Player(bool turn);
+// };
 class Board {
 
     public:
         std::vector<Ball> balls;
         std::vector<Ball*> colBalls;
+        std::vector<Pocket> pockets;
 
         Board();
+
         void render(bool);
 
         //checks for collisions with the walls
@@ -54,21 +75,18 @@ class Board {
         void collisions();
         void update();
 
-        class Pocket{
-            public:
-                float x, y, r;
-                void render();
-        }
+        void scoring();
 };
 
 //global vars
 char state = 'm';       
+bool play1 = true;
+BallType play1Col = Blue;
 
 //function decs
 void drawMenu(), retMenu(), playing(Board&, bool*), reset(Board&);
 float dist(float, float, float, float);
 
-bool play1 = true;
 void takeInput(Board&);
 
 bool running = true;
@@ -177,19 +195,55 @@ void retMenu(){
 void playing(Board& board, bool* play1) {   
 
     board.collisions();
+    
     board.checkWalls();
+    
+    board.scoring();
 
     board.update();
     
     board.render(*play1);
-    takeInput(board);
     
+    //takeInput(board);
 }
 
 void reset(Board& board){
     board = Board();
 }
 
+Pocket::Pocket(float xI, float yI){
+    x = xI;
+    y = yI;
+    r = 7;
+}
+
+// Board::Pocket::Pocket(){
+
+// }
+void Pocket::render(){
+    LCD.SetFontColor(BLACK);
+    LCD.FillCircle(x,y,r);
+}
+
+void Board::scoring(){
+    //handles collisions with the pockets
+    for(int i = 0; i < pockets.size(); i++){
+        for(int j = 0; j < balls.size(); j++){
+            Ball* b = &(balls.at(j));
+            Pocket* p = &(pockets.at(i));
+
+            float hyp = dist(b->getPosX(), b->getPosY(), p->x, p->y);
+
+            if(hyp < (b->getRadius() + p->r)){
+                if(b->getBallType() == Cue){
+                    play1 = !play1;
+                }
+                printf("DELETEEEE--------------\n");
+                balls.erase(balls.begin()+j);
+            }
+        }
+    }
+}
 void Board::collisions(){
     //This function handles all the collisions between balls
     colBalls.clear();
@@ -398,6 +452,9 @@ int Ball::getRadius() {
     return radius;
 }
 
+BallType Ball::getBallType() {
+    return type;
+}
 //initalize the balls at their starting positions
 Board::Board() {
     Ball rb1 = Ball(200, 150, 0, 0, Red);
@@ -433,7 +490,25 @@ Board::Board() {
     Ball eightBall = Ball(222, 150, 0, 0, Eight);
     balls.push_back(eightBall);
 
+    Pocket p1 = Pocket(9, 79);
+    pockets.push_back(p1);
+
+    Pocket p2 = Pocket(9, 230);
+    pockets.push_back(p2);
+
+    Pocket p3 = Pocket(310, 79);
+    pockets.push_back(p3);
+    
+    Pocket p4 = Pocket(310, 230);
+    pockets.push_back(p4);
+
+    Pocket p5 = Pocket(160, 79);
+    pockets.push_back(p5);
+    
+    Pocket p6 = Pocket(160, 230);
+    pockets.push_back(p6);
 }
+
 
 void Board::update(){
     for(int i = 0; i < balls.size(); i++){
@@ -464,13 +539,9 @@ void Board::render(bool play1) {
     LCD.SetFontColor(MAROON); //the red color box
     LCD.FillRectangle(295, 5, 15, 15);
     //Draw pockets
-    LCD.SetFontColor(BLACK);
-    LCD.FillCircle(9, 79, 8);
-    LCD.FillCircle(9, 230, 8);
-    LCD.FillCircle(310, 79, 8);
-    LCD.FillCircle(310, 230, 8);
-    LCD.FillCircle(160, 79, 8);
-    LCD.FillCircle(160, 230, 8);
+    for(int i = 0; i < pockets.size(); i++){
+        pockets.at(i).render();
+    }
 
     LCD.SetFontColor(WHITE); //set font color back to white
 
@@ -488,19 +559,19 @@ for (int i = 0; i < balls.size(); i++) {
             balls.at(i).setPosX(11+balls.at(i).getRadius()+1);//this ensures the ball doesnt get stuck in the wall
         }
         //right side
-        if (balls.at(i).getPosX()+ (balls.at(i).getRadius()) > 309){
+        if (balls.at(i).getPosX()+(balls.at(i).getRadius()) > 309){
             balls.at(i).setVelX(balls.at(i).getVelX()*(-1));
             balls.at(i).setPosX(309-balls.at(i).getRadius());//this ensures the ball doesnt get stuck in the wall
         }
         //top
-        if (balls.at(i).getPosY()-(balls.at(i).getRadius()+1) < 76){
+        if (balls.at(i).getPosY()-(balls.at(i).getRadius()-1) < 82){
             balls.at(i).setVelY(balls.at(i).getVelY()*(-1));
-            balls.at(i).setPosY(76+balls.at(i).getRadius()+1);//this ensures the ball doesnt get stuck in the wall
+            balls.at(i).setPosY(82+balls.at(i).getRadius());//this ensures the ball doesnt get stuck in the wall
         }
         //bottom
-        if (balls.at(i).getPosY()+ (balls.at(i).getRadius()+1) > 224) {
+        if (balls.at(i).getPosY()-(balls.at(i).getRadius()+1) > 218) {
             balls.at(i).setVelY(balls.at(i).getVelY()*(-1));
-            balls.at(i).setPosY(224-balls.at(i).getRadius()-1);//this ensures the ball doesnt get stuck in the wall
+            balls.at(i).setPosY(218+balls.at(i).getRadius()+1);//this ensures the ball doesnt get stuck in the wall
         }
             
     }
