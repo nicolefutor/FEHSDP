@@ -9,6 +9,8 @@
 #define SCREEN_WIDTH 319
 #define SCREEN_HEIGHT 239
 
+#define FRIC .008
+
 //enum for the type of the ball
 enum BallType {Blue, Red, Cue, Eight };
 
@@ -54,7 +56,7 @@ class Board {
         //checks for collisions with the walls
         void checkWalls();
 
-        void twoColl(int, int);
+        void collisions();
         void update();
 };
 
@@ -168,17 +170,7 @@ void retMenu(){
   
 void playing(Board& board) {   
 
-
-    // for(int i = 0; i < board.balls.size(); i++){
-    //     for(int j = 0; j < board.balls.size(); j++){
-    //         if(i != j && (board.balls.at(i).getVelX() != 0 || board.balls.at(i).getVelY() != 0)){
-    //             board.twoColl(i, j);
-    //         }
-    //     }
-    // }
-
-    
-    board.twoColl(1,1);
+    board.collisions();
 
     board.checkWalls();
 
@@ -186,40 +178,42 @@ void playing(Board& board) {
     
     board.render();
     
-    //printf("yPer = %f\n", b1.getPosX());
-    // LCD.Clear(BLACK);
-    // b1.render();
-    // b2.render();  
     
 }
 
-void Board::twoColl(int b13, int b23){
+void Board::collisions(){
+    //This function handles all the collisions between balls
     
-    //float hyp = dist(balls.at(b1).getPosX(), balls.at(b1).getPosY(), balls.at(b2).getPosX(), balls.at(b2).getPosY());
     
     colBalls.clear();
 
-    /*This moves any collision out of the thing it collided with */
+    /*This moves balls out from inside each other, so they are no longer collided, also adds any balls that have collided into an array
+        Doing so allows for simaltaneus collisions
+    */
     for(int i = 0; i < balls.size(); i++){
         for(int j = 0; j < balls.size(); j++){
             if(i != j){
-                //dist between balls
-                float hyp = dist(balls.at(i).getPosX(), balls.at(i).getPosY(), balls.at(j).getPosX(), balls.at(j).getPosY());
+                //these are to save typing
+                Ball* b1 = &balls.at(i);
+                Ball* b2 = &balls.at(j);
                 
-                if (hyp < balls.at(i).getRadius()*2){
-                    colBalls.push_back(&(balls.at(i)));
+                //dist between balls
+                float hyp = dist(b1->getPosX(), b1->getPosY(), b2->getPosX(), b2->getPosY());
+                
+                if (hyp < b1->getRadius()*2){
+                    colBalls.push_back(b1);
                     colBalls.push_back(&(balls.at(j)));
 
                     //find by how much the balls overlap
-                    float overlap = 0.5 * (hyp - balls.at(i).getRadius());
+                    float overlap = 0.5 * (hyp - b1->getRadius());
                     
                     //move ball 1 away from collision
-				    balls.at(i).setPosX(balls.at(i).getPosX() + (overlap * (balls.at(i).getPosX() - balls.at(j).getPosX()) / hyp));
-					balls.at(i).setPosY(balls.at(i).getPosY() + (overlap * (balls.at(i).getPosY() - balls.at(j).getPosY()) / hyp));
+				    b1->setPosX(b1->getPosX() + (overlap * (b1->getPosX() - b2->getPosX()) / hyp));
+					b1->setPosY(b1->getPosY() + (overlap * (b1->getPosY() - b2->getPosY()) / hyp));
 
 					//move ball 2 away from collision
-					balls.at(j).setPosX(balls.at(j).getPosX() - (overlap * (balls.at(i).getPosX() - balls.at(j).getPosX()) / hyp));
-                    balls.at(j).setPosY(balls.at(j).getPosY() - (overlap * (balls.at(i).getPosY() - balls.at(j).getPosY()) / hyp));
+					b2->setPosX(b2->getPosX() - (overlap * (b1->getPosX() - b2->getPosX()) / hyp));
+                    b2->setPosY(b2->getPosY() - (overlap * (b1->getPosY() - b2->getPosY()) / hyp));
                     
                 }
             }
@@ -227,6 +221,7 @@ void Board::twoColl(int b13, int b23){
     }
     //printf("%i\n", *hap);
     
+    /*This then updates the velocity of the balls involved in the collisions*/
     for(int i = 0; i < colBalls.size(); i+=2){
         //these will save alot of typing
         Ball* b1 = colBalls.at(i);
@@ -234,10 +229,12 @@ void Board::twoColl(int b13, int b23){
 
         printf("COLISIIIIOOONNN\n");
 
+        //calculate the sistance between balls
         float hyp = dist(b1->getPosX(), b1->getPosY(), b2->getPosX(), b2->getPosY());
         
 
-        //this math from https://github.com/OneLoneCoder/Javidx9/blob/master/ConsoleGameEngine/BiggerProjects/Balls/OneLoneCoder_Balls1.cpp
+        //this math from https://github.com/OneLoneCoder/Javidx9/blob/master/ConsoleGameEngine/BiggerProjects/Balls/OneLoneCoder_Balls1.cpp4
+        //adapted to fit the fact that all our balls have identical mass
         float nx = (b2->getPosX() - b1->getPosX()) / hyp;
 	    float ny = (b2->getPosY() - b1->getPosY()) / hyp;
 
@@ -253,18 +250,12 @@ void Board::twoColl(int b13, int b23){
         float dpNorm1 = b1->getVelX() * nx + b1->getVelY() * ny;
         float dpNorm2 = b2->getVelX() * nx + b2->getVelY() * ny;
 
-        // Conservation of momentum in 1D
-        float m1 = (dpNorm2);
-        float m2 = (dpNorm1);
-
         // Update ball velocities
-        b1->setVelX(tx * dpTan1 + nx * m1);
-        b1->setVelY(ty * dpTan1 + ny * m1);
-        b2->setVelX(tx * dpTan2 + nx * m2);
-        b2->setVelY(ty * dpTan2 + ny * m2);
-    }
-    //LCD.Touch(&x, &y);
-    
+        b1->setVelX(tx * dpTan1 + nx * dpNorm2);
+        b1->setVelY(ty * dpTan1 + ny * dpNorm2);
+        b2->setVelX(tx * dpTan2 + nx * dpNorm1);
+        b2->setVelY(ty * dpTan2 + ny * dpNorm1);
+    } 
 
 }
 
@@ -286,6 +277,21 @@ Ball::Ball(float px, float py, float vx, float vy, BallType t) {
 void Ball::update() {
     posX+=velX;
     posY+=velY;
+
+    //basically use the velocity to determine the direction friction needs to act
+    float aX = -velX*FRIC;
+    float aY = -velY*FRIC;
+
+    velX += aX;
+    velY += aY;
+
+    //if velocity is very small make it zero, to avoid weirdness
+    if(abs(velX) < .01){
+        velX = 0;
+    }
+    if(abs(velY) < .01){
+        velY = 0;
+    }
 }
 
 //The ball draws itself
@@ -376,7 +382,7 @@ Board::Board() {
     balls.push_back(bb6);
     Ball bb7 = Ball(244, 174, 0, 0, Blue);
     balls.push_back(bb7);
-    Ball cueBall = Ball(100, 150, 3.0, 0, Cue);
+    Ball cueBall = Ball(100, 150, 4.0, 0, Cue);
     balls.push_back(cueBall);
     Ball eightBall = Ball(222, 150, 0, 0, Eight);
     balls.push_back(eightBall);
@@ -423,11 +429,26 @@ void Board::render() {
 
 void Board::checkWalls() {
 for (int i = 0; i < balls.size(); i++) {
-        if (balls.at(i).getPosX() - (balls.at(i).getRadius()+1) < 11 || balls.at(i).getPosX()+ (balls.at(i).getRadius()+1) > 309) {
-        balls.at(i).setVelX(balls.at(i).getVelX()*(-1));
+        //left side
+        if (balls.at(i).getPosX() - (balls.at(i).getRadius()) < 11) {
+            balls.at(i).setVelX(balls.at(i).getVelX()*(-1));
+            balls.at(i).setPosX(11+balls.at(i).getRadius()+1);//this ensures the ball doesnt get stuck in the wall
         }
-        if (balls.at(i).getPosY()- (balls.at(i).getRadius()+1) < 76 || balls.at(i).getPosY()+ (balls.at(i).getRadius()+1) > 224) {
+        //right side
+        if (balls.at(i).getPosX()+ (balls.at(i).getRadius()) > 309){
+            balls.at(i).setVelX(balls.at(i).getVelX()*(-1));
+            balls.at(i).setPosX(309-balls.at(i).getRadius());//this ensures the ball doesnt get stuck in the wall
+        }
+        //top
+        if (balls.at(i).getPosY()-(balls.at(i).getRadius()+1) < 76){
             balls.at(i).setVelY(balls.at(i).getVelY()*(-1));
+            balls.at(i).setPosY(76+balls.at(i).getRadius()+1);//this ensures the ball doesnt get stuck in the wall
         }
+        //bottom
+        if (balls.at(i).getPosY()+ (balls.at(i).getRadius()+1) > 224) {
+            balls.at(i).setVelY(balls.at(i).getVelY()*(-1));
+            balls.at(i).setPosY(224-balls.at(i).getRadius()-1);//this ensures the ball doesnt get stuck in the wall
+        }
+            
     }
 }
