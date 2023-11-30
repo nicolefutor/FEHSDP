@@ -34,24 +34,18 @@ class Ball {
         void setVelY(float vy);
         int getRadius();
 
-        //keeps the collision only happening only once
-        bool hap = false;
-
         //updates position
         void update();
-
-
 };
 
 class Board {
-    //private:
-        
+
     public:
         std::vector<Ball> balls;
         std::vector<Ball*> colBalls;
 
         Board();
-        void render();
+        void render(bool);
 
         //checks for collisions with the walls
         void checkWalls();
@@ -64,8 +58,10 @@ class Board {
 char state = 'm';       
 
 //function decs
-void drawMenu(), retMenu(), playing(Board&);
+void drawMenu(), retMenu(), playing(Board&, bool*), reset(Board&);
 float dist(float, float, float, float);
+
+bool play1 = true;
 
 bool running = true;
 
@@ -79,11 +75,13 @@ int main() {
     while (running) {
         if(state == 'm'){
             drawMenu();
+            reset(board);
+            play1 = true;
         }
         else if(state == 'p'){
             //placeholder
             // LCD.WriteAt("PLAYING", 100, 20);
-            playing(board);
+            playing(board, &play1);
         }
         else if(state == 't'){
             //placeholder
@@ -168,17 +166,25 @@ void retMenu(){
 }
 
   
-void playing(Board& board) {   
+void playing(Board& board, bool* play1) {   
 
+    
+    
     board.collisions();
-
+    
     board.checkWalls();
 
     board.update();
     
-    board.render();
+    board.render(*play1);
     
+
     
+}
+
+void reset(Board& board){
+    board = Board();
+
 }
 
 void Board::collisions(){
@@ -396,18 +402,25 @@ void Board::update(){
 }
 
 //Draws the board and all of the balls on it
-void Board::render() {
+void Board::render(bool play1) {
     LCD.SetFontColor(SADDLEBROWN); //the brown border
     LCD.FillRectangle(7, 72, 306, 156);
     LCD.SetFontColor(DARKGREEN); //the green table
     LCD.FillRectangle(11, 76, 298, 148);
     LCD.SetFontColor(WHITE); //the player name labels
-    LCD.WriteAt("Player 1", 5, 5);
+    if(play1){
+        LCD.SetFontColor(GREEN);
+    }
+    LCD.WriteAt("Player 1", 25, 5);
+    LCD.SetFontColor(WHITE);
+    if(!play1){
+        LCD.SetFontColor(GREEN);
+    }
     LCD.WriteAt("Player 2", 190, 5);
-    LCD.DrawRectangle(109, 4, 17, 17); //the white boxes around the player colors
+    LCD.DrawRectangle(129, 4, 17, 17); //the white boxes around the player colors
     LCD.DrawRectangle(294, 4, 17, 17);
     LCD.SetFontColor(DARKBLUE); //the blue color box
-    LCD.FillRectangle(110, 5, 15, 15);
+    LCD.FillRectangle(130, 5, 15, 15);
     LCD.SetFontColor(MAROON); //the red color box
     LCD.FillRectangle(295, 5, 15, 15);
     //Draw pockets
