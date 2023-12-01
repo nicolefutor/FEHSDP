@@ -46,24 +46,27 @@ class Board {
         std::vector<Ball*> colBalls;
 
         Board();
-        void render(bool);
+        void render();
 
         //checks for collisions with the walls
         void checkWalls();
 
         void collisions();
         void update();
+
+        //returns true if there are any balls still moving
+        bool checkMovingBalls();
 };
 
 //global vars
 char state = 'm';       
 
 //function decs
-void drawMenu(), retMenu(), playing(Board&, bool*), reset(Board&);
+void drawMenu(), retMenu(), playing(Board&, bool*), reset(Board&), drawPlayerMenus(bool);
 float dist(float, float, float, float);
 
 bool play1 = true;
-void takeInput(Board&);
+void takeInput(Board&, Ball&);
 
 bool running = true;
 
@@ -169,19 +172,37 @@ void retMenu(){
 
   
 void playing(Board& board, bool* play1) {   
+    board.render();
+    drawPlayerMenus(*play1);
+    takeInput(board, board.balls.at(14));
+    while (board.checkMovingBalls()) {
+        board.collisions();
+        board.checkWalls();
+        board.update();
+        board.render();
+        LCD.Update();
+    }
+    
+}
 
-    
-    
-    board.collisions();
-    board.checkWalls();
-
-    board.update();
-    
-    board.render(*play1);
-    takeInput(board);
-    
-
-    
+void drawPlayerMenus(bool play1) {
+    LCD.SetFontColor(WHITE); //the player name labels
+    if(play1){
+        LCD.SetFontColor(GREEN);
+    }
+    LCD.WriteAt("Player 1", 25, 5);
+    LCD.SetFontColor(WHITE);
+    if(!play1){
+        LCD.SetFontColor(GREEN);
+    }
+    LCD.WriteAt("Player 2", 190, 5);
+    LCD.DrawRectangle(129, 4, 17, 17); //the white boxes around the player colors
+    LCD.DrawRectangle(294, 4, 17, 17);
+    LCD.SetFontColor(DARKBLUE); //the blue color box
+    LCD.FillRectangle(130, 5, 15, 15);
+    LCD.SetFontColor(MAROON); //the red color box
+    LCD.FillRectangle(295, 5, 15, 15);
+    LCD.SetFontColor(WHITE);
 }
 
 void reset(Board& board){
@@ -191,7 +212,6 @@ void reset(Board& board){
 
 void Board::collisions(){
     //This function handles all the collisions between balls
-    
     
     colBalls.clear();
 
@@ -269,13 +289,16 @@ void Board::collisions(){
 
 }
 
-void takeInput(Board& board) {
+void takeInput(Board& board, Ball& cueBall) {
     float x,y;
     int sMeterX = 117, sMeterY = 56, sMeterW = 125, sMeterH = 12;
     int hitX = 255, hitY = 50, hitH = 21, hitW = 44;
-    int tableX = 11, tableY = 76, tableW, tableH;
+    int tableX = 7, tableY = 77, tableW = 306, tableH = 156;
+    float magnitude = 0;
+    float unitVelX, unitVelY;
+    bool magChosen = false, angleChosen = false, ballHit = false;;
 
-    Ball cueBall = board.balls.at(15);
+    // Ball cueBall = board.balls.at(14);
 
     LCD.WriteAt("Strength: ", 5, 55);
     LCD.DrawRectangle(sMeterX, sMeterY, sMeterW, sMeterH);
@@ -283,27 +306,53 @@ void takeInput(Board& board) {
     LCD.DrawRectangle(hitX, hitY, hitW, hitH);
     LCD.WriteAt("Hit", hitX+4, hitY+3);
 
-    //Wait for touchscreen press
-    while(!LCD.Touch(&x,&y));
-    //Wait for touchscreen release
-    while(LCD.Touch(&x,&y));
-    //if they press wihin the region of the strength meter
-    if (x > sMeterX && x < (sMeterX+sMeterW) && y > sMeterY && y < (sMeterY+sMeterH)) { 
-        LCD.SetFontColor(BLACK); //draw black over the old rectangle
-        LCD.FillRectangle(sMeterX+1, sMeterY+1, sMeterW-2, sMeterH-2);
-        LCD.SetFontColor(PURPLE); //draw a old rectangle up to where the user clicked in the strength meter
-        LCD.FillRectangle(sMeterX+1, sMeterY+1, x-sMeterX, sMeterH-2);
-        LCD.SetFontColor(WHITE); //set font color back to white
+    while (!ballHit) {
+        //Wait for touchscreen press
+        while(!LCD.Touch(&x,&y));
+        //Wait for touchscreen release
+        while(LCD.Touch(&x,&y));
+        //if they press wihin the region of the strength meter
+        if (x > sMeterX && x < (sMeterX+sMeterW) && y > sMeterY && y < (sMeterY+sMeterH)) { 
+            LCD.SetFontColor(BLACK); //draw black over the old rectangle
+            LCD.FillRectangle(sMeterX+1, sMeterY+1, sMeterW-2, sMeterH-2);
+            LCD.SetFontColor(PURPLE); //draw a old rectangle up to where the user clicked in the strength meter
+            LCD.FillRectangle(sMeterX+1, sMeterY+1, x-sMeterX, sMeterH-2);
+            LCD.SetFontColor(WHITE); //set font color back to white
+
+            double percentage = 1.0*((x - sMeterX) / sMeterW);
+            magnitude = percentage * 5;
+            magChosen = true;
+        }
+        //if they press within the pool table
+        else if (x > tableX && x < (tableX+tableW) && y > tableY && y < (tableY+tableH)) {
+            board.render(); //rerender board to get rid of line drawn last time
+            int dx = x - cueBall.getPosX();
+            int dy = y - cueBall.getPosY();
+            float angle = atan2(dy,dx) * 180 / 3.14159;
+            dx *= -1;
+            dy *= -1;
+
+            angle += 180;
+            unitVelX = cos(angle * 3.14159 / 180);
+            unitVelY = sin(angle * 3.14159 / 180);
+            angleChosen = true;
+
+            //draw line to show the angle they selected
+            LCD.SetFontColor(NAVY);
+            LCD.DrawLine(cueBall.getPosX(), cueBall.getPosY(), x, y);
+        }
+        // if they press within the hit button
+        else if (magChosen && angleChosen) {
+            cueBall.setVelX(unitVelX*magnitude);
+            cueBall.setVelY(unitVelY*magnitude);
+            ballHit = true; //will exit the function and go back to playing()
+        }
+
     }
-    //if they press within the hit button
-    // else if () {
-
-    // }
-    //if they press within the pool table
-    // else if (x > ) {
-
-    // }
-
+    //erase the input ui
+    LCD.SetFontColor(BLACK);
+    LCD.FillRectangle(5, 50, 310, 30);
+    LCD.SetFontColor(WHITE);
 
 }
 
@@ -429,7 +478,7 @@ Board::Board() {
     balls.push_back(bb6);
     Ball bb7 = Ball(244, 174, 0, 0, Blue);
     balls.push_back(bb7);
-    Ball cueBall = Ball(100, 150, 4.0, 0, Cue);
+    Ball cueBall = Ball(100, 150, 0, 0, Cue);
     balls.push_back(cueBall);
     Ball eightBall = Ball(222, 150, 0, 0, Eight);
     balls.push_back(eightBall);
@@ -443,27 +492,11 @@ void Board::update(){
 }
 
 //Draws the board and all of the balls on it
-void Board::render(bool play1) {
+void Board::render() {
     LCD.SetFontColor(SADDLEBROWN); //the brown border
     LCD.FillRectangle(7, 77, 306, 156);
     LCD.SetFontColor(DARKGREEN); //the green table
     LCD.FillRectangle(11, 81, 298, 148);
-    LCD.SetFontColor(WHITE); //the player name labels
-    if(play1){
-        LCD.SetFontColor(GREEN);
-    }
-    LCD.WriteAt("Player 1", 25, 5);
-    LCD.SetFontColor(WHITE);
-    if(!play1){
-        LCD.SetFontColor(GREEN);
-    }
-    LCD.WriteAt("Player 2", 190, 5);
-    LCD.DrawRectangle(129, 4, 17, 17); //the white boxes around the player colors
-    LCD.DrawRectangle(294, 4, 17, 17);
-    LCD.SetFontColor(DARKBLUE); //the blue color box
-    LCD.FillRectangle(130, 5, 15, 15);
-    LCD.SetFontColor(MAROON); //the red color box
-    LCD.FillRectangle(295, 5, 15, 15);
     //Draw pockets
     LCD.SetFontColor(BLACK);
     LCD.FillCircle(9, 79, 8);
@@ -494,15 +527,25 @@ for (int i = 0; i < balls.size(); i++) {
             balls.at(i).setPosX(309-balls.at(i).getRadius());//this ensures the ball doesnt get stuck in the wall
         }
         //top
-        if (balls.at(i).getPosY()-(balls.at(i).getRadius()+1) < 76){
+        if (balls.at(i).getPosY()-(balls.at(i).getRadius()) < 77){
             balls.at(i).setVelY(balls.at(i).getVelY()*(-1));
             balls.at(i).setPosY(76+balls.at(i).getRadius()+1);//this ensures the ball doesnt get stuck in the wall
         }
         //bottom
-        if (balls.at(i).getPosY()+ (balls.at(i).getRadius()+1) > 224) {
+        if (balls.at(i).getPosY()+ (balls.at(i).getRadius()) > 224) {
             balls.at(i).setVelY(balls.at(i).getVelY()*(-1));
             balls.at(i).setPosY(224-balls.at(i).getRadius()-1);//this ensures the ball doesnt get stuck in the wall
         }
             
     }
+}
+
+bool Board::checkMovingBalls() {
+    bool stillMoving = false;
+    for (Ball ball : balls) {
+        if (ball.getVelX() != 0 || ball.getVelY() != 0) {
+            stillMoving = true;
+        }
+    }
+    return stillMoving;
 }

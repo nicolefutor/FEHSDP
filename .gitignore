@@ -38,6 +38,7 @@ simulator_libraries/
 
 # VS Code
 *.code_workspace
+.vscode
 
 # Project specific
 game
