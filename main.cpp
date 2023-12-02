@@ -8,6 +8,7 @@
 
 #include "FEHLCD.h"
 #include <string.h>
+#include <string>
 #include <math.h>
 #include <vector>
 #include <iostream>
@@ -16,8 +17,8 @@
 #define SCREEN_WIDTH 319
 #define SCREEN_HEIGHT 239
 
-//#define FRIC .008
-#define FRIC 0
+#define FRIC .008
+//#define FRIC 0
 
 
 //enum for the type of the ball
@@ -54,16 +55,22 @@ class Pocket {
         void render();
 };
 
-// class Player {
-//     public:
-//         Player(bool turn);
-// };
+class Player{
+    public:
+        bool hasScored;
+        int score;
+        BallType col;
+        Player();
+
+};
+
 class Board {
 
     public:
         std::vector<Ball> balls;
         std::vector<Ball*> colBalls;
         std::vector<Pocket> pockets;
+        std::vector<Player> players;
 
         Board();
         void render();
@@ -82,11 +89,14 @@ class Board {
 
 //global vars
 char state = 'm';       
-bool play1 = true;
-BallType play1Col = Blue;
+bool turn = true; //start true because will be automattically switched
+bool isFirst = true;
+
+//bool play1 = true, hasScored = false, isFirst = true;
+//BallType play1Col = Cue;
 
 //function decs
-void drawMenu(), retMenu(), playing(Board&, bool*), reset(Board&), drawPlayerMenus(bool);
+void drawMenu(), retMenu(), playing(Board&), reset(Board&), drawPlayerMenus(Player, Player);
 float dist(float, float, float, float);
 
 void takeInput(Board&, Ball&);
@@ -95,21 +105,24 @@ bool running = true;
 
 int main() {
     //local vars to main
-    
     bool hap = false;
 
     Board board = Board();
+
+    Player p1 = Player();
+    Player p2 = Player();
 
     while (running) {
         if(state == 'm'){
             drawMenu();
             reset(board);
-            play1 = true;
+            turn = true;
+            isFirst = true;
         }
         else if(state == 'p'){
             //placeholder
             // LCD.WriteAt("PLAYING", 100, 20);
-            playing(board, &play1);
+            playing(board);
         }
         else if(state == 't'){
             //placeholder
@@ -194,42 +207,95 @@ void retMenu(){
 }
 
   
-void playing(Board& board, bool* play1) {   
-    board.render();
-    drawPlayerMenus(*play1);
-    takeInput(board, board.balls.at(14));
-    while (board.checkMovingBalls()) {
-        board.collisions();
-        board.checkWalls();
-        board.update();
-        board.render();
-        LCD.Update();
+void playing(Board& board) {      
+    board.collisions();
+    board.checkWalls();
+    board.scoring();
+    
+    if (!board.checkMovingBalls()) {
+        
+        printf("STATIONARYYYYYYY\n");
+        printf("hasScored = %i\n", board.players.at(turn).hasScored);
+
+        if(!board.players.at(turn).hasScored){
+            turn = !turn;
+        }
+        printf("turn = %i\n", turn);
+        
+        board.players.at(turn).hasScored = false;
+        
+        drawPlayerMenus(board.players.at(0), board.players.at(1));//update the plyer menu with whose turn it is
+
+        //find which ball is the cue ball
+        int cueId = -1;
+        for (int i = 0; i < board.balls.size(); i++){
+            if(board.balls.at(i).getBallType() == Cue){
+                cueId = i;
+            }
+        }
+        //get user input
+        takeInput(board, board.balls.at(cueId));
     }
+
+    board.update();
+    board.render();
     
 }
 
-void drawPlayerMenus(bool play1) {
+void drawPlayerMenus(Player p1, Player p2) {
     LCD.SetFontColor(WHITE); //the player name labels
-    if(play1){
+    if(!turn){
         LCD.SetFontColor(GREEN);
     }
     LCD.WriteAt("Player 1", 25, 5);
     LCD.SetFontColor(WHITE);
-    if(!play1){
+    if(turn){
         LCD.SetFontColor(GREEN);
     }
     LCD.WriteAt("Player 2", 190, 5);
-    LCD.DrawRectangle(129, 4, 17, 17); //the white boxes around the player colors
-    LCD.DrawRectangle(294, 4, 17, 17);
-    LCD.SetFontColor(DARKBLUE); //the blue color box
-    LCD.FillRectangle(130, 5, 15, 15);
-    LCD.SetFontColor(MAROON); //the red color box
-    LCD.FillRectangle(295, 5, 15, 15);
     LCD.SetFontColor(WHITE);
+    LCD.DrawRectangle(129, 4, 18, 18); //the white boxes around the player colors
+    LCD.DrawRectangle(294, 4, 18, 18);
+    
+    if(p1.col == Blue){
+        LCD.SetFontColor(DARKBLUE); //the player color box
+    }else if(p1.col == Red){
+        LCD.SetFontColor(MAROON);
+    }else{
+        LCD.SetFontColor(BLACK);
+    }
+    LCD.FillRectangle(130, 5, 16, 16);
+    
+    if(p1.col == Blue){
+        LCD.SetFontColor(MAROON); //the player 2 color box
+    }else if(p1.col == Red){
+        LCD.SetFontColor(DARKBLUE);
+    }else{
+        LCD.SetFontColor(BLACK);
+    }
+    LCD.FillRectangle(295, 5, 16, 16);
+    LCD.SetFontColor(WHITE);
+    
+    //display the score of each player
+    //first convert score to string
+    std::string p1S = std::to_string(p1.score);
+    std::string p2S = std::to_string(p2.score);
+    
+    LCD.WriteAt(p1S, 131, 6);
+    LCD.WriteAt(p2S, 296, 6);
 }
 
 void reset(Board& board){
     board = Board();
+    
+    board.render();
+    drawPlayerMenus(board.players.at(0), board.players.at(1));
+}
+
+Player::Player(){
+    hasScored = false;
+    col = Cue;
+    score = 0;
 }
 
 Pocket::Pocket(float xI, float yI){
@@ -238,32 +304,46 @@ Pocket::Pocket(float xI, float yI){
     r = 7;
 }
 
-// Board::Pocket::Pocket(){
-
-// }
 void Pocket::render(){
     LCD.SetFontColor(BLACK);
     LCD.FillCircle(x,y,r);
 }
 
 void Board::scoring(){
-    //handles collisions with the pockets
+    //handles collisions with the pockets, returns whether or not someone has scored their color
     for(int i = 0; i < pockets.size(); i++){
         for(int j = 0; j < balls.size(); j++){
+            //these to keep things tidy
             Ball* b = &(balls.at(j));
             Pocket* p = &(pockets.at(i));
+            Player* play = &(players.at(turn));
 
             float hyp = dist(b->getPosX(), b->getPosY(), p->x, p->y);
-
+            
             if(hyp < (b->getRadius() + p->r)){
-                if(b->getBallType() == Cue){
-                    play1 = !play1;
+                if(b->getBallType() != Cue && (play->col == b->getBallType() || isFirst)){ //if the player scores a ball, other than the cue, and it is the correct color, they score
+                    play->hasScored = true;
+                    play->score++;
+                    //printf("---------------------hasScored = %i ----------------\n", play->hasScored);
                 }
                 printf("DELETEEEE--------------\n");
                 balls.erase(balls.begin()+j);
             }
+            
+            //if first score set the color for the player
+            if(play->hasScored && isFirst){
+                play->col = b->getBallType();
+                
+                if(b->getBallType() == Red){
+                    players.at(!turn).col = Blue;
+                }else{
+                    players.at(!turn).col = Red;
+                }
+                isFirst = false;
+            }
         }
     }
+
 }
 void Board::collisions(){
     //This function handles all the collisions between balls
@@ -309,7 +389,7 @@ void Board::collisions(){
         Ball* b1 = colBalls.at(i);
         Ball* b2 = colBalls.at(i+1);
 
-        printf("COLISIIIIOOONNN\n");
+        //printf("COLISIIIIOOONNN\n");
 
         //calculate the sistance between balls
         float hyp = dist(b1->getPosX(), b1->getPosY(), b2->getPosX(), b2->getPosY());
@@ -351,8 +431,6 @@ void takeInput(Board& board, Ball& cueBall) {
     float magnitude = 0;
     float unitVelX, unitVelY;
     bool magChosen = false, angleChosen = false, ballHit = false;;
-
-    // Ball cueBall = board.balls.at(14);
 
     LCD.WriteAt("Strength: ", 5, 55);
     LCD.DrawRectangle(sMeterX, sMeterY, sMeterW, sMeterH);
@@ -401,7 +479,6 @@ void takeInput(Board& board, Ball& cueBall) {
             cueBall.setVelY(unitVelY*magnitude);
             ballHit = true; //will exit the function and go back to playing()
         }
-
     }
     //erase the input ui
     LCD.SetFontColor(BLACK);
@@ -557,6 +634,14 @@ Board::Board() {
     
     Pocket p6 = Pocket(160, 230);
     pockets.push_back(p6);
+
+        
+    Player play1 = Player();
+    players.push_back(play1);
+
+    Player play2 = Player();
+    players.push_back(play2);
+
 }
 
 
