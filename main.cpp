@@ -1,10 +1,4 @@
 //Max O'Ganian and Nicole Futoryansky
-//scractches and the 8 ball
-//correct color bassed off start
-//win
-//timed - showing clock
-//credit screen
-
 
 #include "FEHLCD.h"
 #include <string.h>
@@ -12,12 +6,17 @@
 #include <math.h>
 #include <vector>
 #include <iostream>
+#include <time.h>
 
 //define constants
 #define SCREEN_WIDTH 319
 #define SCREEN_HEIGHT 239
 
 #define FRIC .008
+#define TIME 120
+
+#define CELLY_TIME 25 //the time between each ball creation for the celebrations
+
 //#define FRIC 0
 
 
@@ -31,7 +30,7 @@ class Ball {
         BallType type;
     public:
         Ball(float px, float py, float vx, float vy, BallType t);
-        void render(); //
+        void render(); //draws ball
 
         //getters and setters
         float getPosX();
@@ -85,53 +84,118 @@ class Board {
 
         //returns true if there are any balls still moving
         bool checkMovingBalls();
+
+        void checkWinner();
+};
+
+//jsut used for cool graphics
+class CelBall {
+    public:
+        float x, y, vX, color, r;
+        float g, vY;
+        int colors[10] = {RED, BLUE, GREEN, ORANGE, PURPLE, BROWN, YELLOW, YELLOWGREEN, HOTPINK, GOLD};
+        
+        void render(); 
+        void update();
+        CelBall(float);
+};
+
+//holds all the celBalls
+class CelBalls {
+    public:
+        std::vector<CelBall> balls;
+        int count;
+        bool pos; //used for if the balls will be going in the positive direction
+        void render();
+        void update();
+        CelBalls();
 };
 
 //global vars
-char state = 'm';       
+char state = 'm'; 
+char tempState = 'm';  
 bool turn = true; //start true because will be automattically switched
 bool isFirst = true;
 
-//bool play1 = true, hasScored = false, isFirst = true;
-//BallType play1Col = Cue;
-
 //function decs
-void drawMenu(), retMenu(), playing(Board&), reset(Board&), drawPlayerMenus(Player, Player);
+void drawMenu(), retMenu(), playing(Board&), reset(Board&), drawPlayerMenus(Player, Player), scratch(Board&), drawTime(long int), drawCredits(int*), takeInput(Board&, Ball&), celebrate(CelBalls&);
 float dist(float, float, float, float);
 
-void takeInput(Board&, Ball&);
-
+//used for keeping track of when the game is running
 bool running = true;
 
 int main() {
     //local vars to main
-    bool hap = false;
-
+    long int startTime;
+    int creditY = 0; //used to make the credits scroll
     Board board = Board();
 
+    //the two players
     Player p1 = Player();
     Player p2 = Player();
 
+    CelBalls celly = CelBalls();//for the cellies 
+
     while (running) {
-        if(state == 'm'){
+        if(state == 'h'){//this exists purely to make the celebrations look good
+            celly.balls.clear();
+            state = 'm';
+        }
+        //menu state
+        else if(state == 'm'){
+            celebrate(celly);
             drawMenu();
+        }
+        //in between menu, for resetting
+        else if(state == 'b'){
+            //under here resets everything to the state needed to start playing, so games can be played infinitly
+            celly.balls.clear();
             reset(board);
             turn = true;
             isFirst = true;
+            startTime = time(NULL);
+            creditY = 100;
+            state = tempState;//allow to continue
+            tempState = 'm';
         }
+        //normal playing
         else if(state == 'p'){
-            //placeholder
-            // LCD.WriteAt("PLAYING", 100, 20);
             playing(board);
         }
+        //timed playing
         else if(state == 't'){
-            //placeholder
-            LCD.WriteAt("PLAYING TIMED", 100 ,20);
+            //if there is time left people can play
+            if((time(NULL) - startTime) < TIME){
+                playing(board);
+                drawTime(startTime);
+            }
+            //if time runs out they both loose
+            else{
+                state = 'n';
+            }
         }
+        //if player 1 wins
+        else if(state == '1'){
+            celebrate(celly);
+            LCD.WriteAt("GOOD JOB P1!", 90 ,20);
+                       
+        }
+        //if player 2 wins
+        else if(state == '2'){
+            celebrate(celly);
+            LCD.WriteAt("GOOD JOB P2!", 90 ,20);
+        }
+        //if neither wins
+        else if(state == 'n'){
+            LCD.Clear(BLACK);
+            LCD.WriteAt("Time is up!", 100 ,20);
+            LCD.WriteAt("(No animation yall lost)", 50, 200);
+        }
+        //draws credits
         else if(state == 'i'){
-            //placeholder
-            LCD.WriteAt("HERES HOW TO PLAY THE GAME", 20, 20);
+            drawCredits(&creditY);
         }
+        //exit state
         else if(state == 'e'){
             running = false;
         }
@@ -146,46 +210,78 @@ int main() {
     }
     return 0;
 }
-
+void drawCredits(int* y){
+    //draws the credits for the credits screen, they scroll
+    LCD.Clear(BLACK);
+    LCD.WriteAt("All code and art", 70, *y);
+    LCD.WriteAt("was produced by", 76, *y+20);
+    LCD.WriteAt("Nicole Futoryansky", 62, *y+40);
+    LCD.WriteAt("and", 147, *y+60);
+    LCD.WriteAt("Max O'Ganian", 95, *y+80);
+    //credits scroll upwards
+    *y = *y - 1;
+}
+void drawTime(long int startTime){
+    //draw the remaining time of the game
+    long int cur = time(NULL);
+    std::string time = std::to_string(TIME - (cur - startTime));
+    LCD.SetFontColor(BLACK);
+    LCD.FillRectangle(150,2,40,17);
+    LCD.SetFontColor(WHITE);
+    LCD.WriteAt(time,150,2);
+}
 void drawMenu(){
     //set variables to keep everything in here tidy
     int wordX = 60, wordL = 195, wordH = 15, playY = 60, timeY = 90, instY = 120, exitY = 150;
     float x, y;
 
     //draw the options to the screen
-    LCD.Clear(BLACK);
+    bool t = LCD.Touch(&x, &y);
     LCD.WriteAt("Choose an Option", wordX, 30);
+    //based on where the mouse is, highlight that option
+    if(x > wordX && x < (wordX  + wordL) && y > playY && y < (playY + wordH)){
+        LCD.SetFontColor(GREEN);
+    }
     LCD.WriteAt("------PLAY------", wordX, playY);
+    LCD.SetFontColor(WHITE);
+    
+    if (x > wordX && x < (wordX  + wordL) && y > timeY && y < (timeY + wordH)){
+        LCD.SetFontColor(GREEN);
+    }
     LCD.WriteAt("---PLAY TIMED---", wordX, timeY);
-    LCD.WriteAt("--INSTRUCTIONS--", wordX, instY);
-    LCD.WriteAt("------EXIT------", wordX, exitY);
+    LCD.SetFontColor(WHITE);
 
-    //wait for the screen to be touched
-    while(!LCD.Touch(&x, &y)){}
+    if (x > wordX && x < (wordX  + wordL) && y > instY && y < (instY + wordH)){
+        LCD.SetFontColor(GREEN);
+    }
+    LCD.WriteAt("-----CREDIT-----", wordX, instY);
+    LCD.SetFontColor(WHITE);
+    
+    if (x > wordX && x < (wordX  + wordL) && y > exitY && y < (exitY + wordH)){
+        LCD.SetFontColor(GREEN);
+    }
+    LCD.WriteAt("------EXIT------", wordX, exitY);
+    LCD.SetFontColor(WHITE);
 
     //first check if the click is within the x range of the options
-    if(x > wordX && x < (wordX  + wordL)){
+    if(x > wordX && x < (wordX  + wordL) && t){
         //Then check if the touch is within any of the buttons
         if(y > playY && y < (playY + wordH)){
             //if the touch is within, change state to the appropriate var
-            state = 'p';
+            tempState = 'p';
         }
         else if (y > timeY && y < (timeY + wordH)){
-            state = 't';
+            tempState = 't';
         }
         else if (y > instY && y < (instY + wordH)){
-            state = 'i';
+            tempState = 'i';
         }
         else if (y > exitY && y < (exitY + wordH)){
-            state = 'e';
+            tempState = 'e';
         }
+        state = 'b';
     }
 
-    //clear the screen
-    LCD.Clear(BLACK);
-
-    //dont continue until the mouse is released, to avoid issues with next steps
-    while(LCD.Touch(&x,&y)){}
 }
 
 void retMenu(){
@@ -201,30 +297,29 @@ void retMenu(){
     if(LCD.Touch(&x, &y)){
         //if the mouse is clicked in the rectangle, go to the menu
         if(x > rectX && x < (rectX + rectW) && y > rectY && y < (rectY + rectH)){
-            state = 'm';
+            state = 'h';
         }
     }
 }
 
   
 void playing(Board& board) {      
+    //do the basic checks wvery cycle
     board.collisions();
     board.checkWalls();
     board.scoring();
     
-    if (!board.checkMovingBalls()) {
+    //if nothing is moving then go through checks relating to scoring ect
+    if (!board.checkMovingBalls() && (state == 'p' || state == 't')) {//only go through this if someone hasnt already won
         
-        printf("STATIONARYYYYYYY\n");
-        printf("hasScored = %i\n", board.players.at(turn).hasScored);
-
+        //if the player didnt score continur to next player turn
         if(!board.players.at(turn).hasScored){
-            turn = !turn;
+            turn = !turn;//this happens here so the scratch function works right
         }
-        printf("turn = %i\n", turn);
         
-        board.players.at(turn).hasScored = false;
+        board.players.at(turn).hasScored = false;//reset hasScored
         
-        drawPlayerMenus(board.players.at(0), board.players.at(1));//update the plyer menu with whose turn it is
+        drawPlayerMenus(board.players.at(0), board.players.at(1));//update the player menu with whose turn it is
 
         //find which ball is the cue ball
         int cueId = -1;
@@ -233,13 +328,96 @@ void playing(Board& board) {
                 cueId = i;
             }
         }
+        if(cueId == -1){ //this means the player scratched, as the cue ball couldnt be found
+            scratch(board);
+            cueId = board.balls.size()-1; //the cue ball will be the last in the ball list
+            drawPlayerMenus(board.players.at(0), board.players.at(1));//update the player menu with the score
+        }
         //get user input
         takeInput(board, board.balls.at(cueId));
     }
 
+    //check for the winner, then update positions and drraw the board
+    board.checkWinner();
     board.update();
     board.render();
     
+}
+
+void scratch(Board& board){
+    //scratches suck, getting the ball placed somewhere not on top of another ball definitley sucks.
+    //to handle this, the user places the cue ball, like in normal pool, but the other ball is randomly placed, so if it is placed ontop of another ball 
+    //it can be randomly moved
+    float x,y, xP = -1, yP = -1, xF, yF;
+    int r = board.balls.at(0).getRadius();//this is just for convienence
+    
+    bool foundPos = false;//stores if a successful position has been found
+    int disp = 10; //the initial distance the ball is allowed to be from the "perfect" spot for it
+
+    while(!foundPos){
+        int x, y;
+
+        for(int i = 0; i < 100; i++){//try 100 combinations of x and y within this displacement to try and find a spot.
+            x = rand()%disp + (200-disp/2); //try an x position within a certain distance of the correct spot
+            y = rand()%disp + (150-disp/2); //same for y
+
+            bool fits = true;
+            for(int j = 0; j < board.balls.size(); j++){ // now check if the ball is placed in a problamatic area
+                float hyp = dist(x, y, board.balls.at(j).getPosX(), board.balls.at(j).getPosY());
+                if(hyp < r*2){ //if the ball would be placed inside another ball, test fails
+                    fits = false;
+                }
+            }
+
+            if(fits){
+                xF = x; //set the final position of the ball
+                yF = y;
+
+                i = 100;//exit for loop
+                foundPos = true;//exit while loop
+            }
+        }
+        disp+=10;//if no spot could be found, a wider search must be used
+    }
+    //make a new ball of the type of the player who scratched
+    BallType bT; 
+    bT = board.players.at(!turn).col;
+    
+    if(board.players.at(!turn).score != 0){ //only put up a ball if the player has one to put up
+        board.players.at(!turn).score--;//the player who scratched looses a point
+        Ball newBall = Ball(xF, yF, 0, 0, bT);
+        board.balls.push_back(newBall);
+    }
+    
+    //everything within this while loop deals with the cue ball
+    while(xP == -1 && yP == -1){
+        
+        while(!LCD.Touch(&x, &y)){
+            
+            board.render();//draw board to cover old cue drawings
+            
+            //check to make sure the cue ball isnt placed within any other balls
+            bool isWithin = false;
+            for(int i = 0; i < board.balls.size(); i++){
+                float hyp = dist(x, y, board.balls.at(i).getPosX(), board.balls.at(i).getPosY());
+                if(hyp < r*2){
+                    isWithin = true; //test fails if inside another ball
+                }
+            }
+            //only place the cue ball if it is within the allowed area, and not ontop of another ball
+            if((x > 11+r && x < 298-r && y > 81+r && y < 248) && !isWithin){
+                xP = x;
+                yP = y;
+            }
+            if(xP != -1){//this avoids placing a ball at the start position
+                LCD.FillCircle(xP,yP,r);
+            }
+        }
+    }
+    //create new cue ball
+    Ball cueBall = Ball(xP, yP, 0, 0, Cue);
+    board.balls.push_back(cueBall);
+
 }
 
 void drawPlayerMenus(Player p1, Player p2) {
@@ -266,9 +444,9 @@ void drawPlayerMenus(Player p1, Player p2) {
     }
     LCD.FillRectangle(130, 5, 16, 16);
     
-    if(p1.col == Blue){
+    if(p2.col == Red){
         LCD.SetFontColor(MAROON); //the player 2 color box
-    }else if(p1.col == Red){
+    }else if(p2.col == Blue){
         LCD.SetFontColor(DARKBLUE);
     }else{
         LCD.SetFontColor(BLACK);
@@ -287,30 +465,108 @@ void drawPlayerMenus(Player p1, Player p2) {
 
 void reset(Board& board){
     board = Board();
-    
+    LCD.Clear(BLACK);
     board.render();
     drawPlayerMenus(board.players.at(0), board.players.at(1));
+}
+void celebrate(CelBalls& celly){
+    LCD.Clear(BLACK);
+    celly.update();
+    celly.render();
+}
+CelBall::CelBall(float vxI){
+    x = SCREEN_WIDTH/2;
+    y = SCREEN_HEIGHT - 20;
+    vX = vxI - ((float)rand()/RAND_MAX)*.5 +.05;
+    vY = -1.7;
+    g = .01;
+    r = 5;
+
+    int i = rand()%10;
+    color = colors[i];
+}
+
+void CelBall::update(){
+    x += vX;
+    y += vY;
+    vY += g;
+}
+
+void CelBall::render(){
+    LCD.SetFontColor(color);
+    LCD.FillCircle((int)x, (int)y, r);
+    LCD.SetFontColor(WHITE);
+}
+
+CelBalls::CelBalls(){
+    count = CELLY_TIME;
+    pos = true;
+}
+
+void CelBalls::render(){
+    for(int i = 0; i < balls.size(); i++){
+        balls.at(i).render();
+    }
+}
+
+void CelBalls::update(){
+    CelBall nB = CelBall(.5);
+    count++;
+    if(count > CELLY_TIME){
+        if(!pos){
+            nB.vX = -nB.vX;//reverse the x direction
+        }
+        pos = !pos;
+        balls.push_back(nB);
+        count = 0;
+    }
+    
+    for(int i = 0; i < balls.size(); i++){
+        balls.at(i).update();
+        if((balls.at(i).y + balls.at(i).r) > SCREEN_HEIGHT){
+            balls.erase(balls.begin() + i);
+        }
+    }
 }
 
 Player::Player(){
     hasScored = false;
     col = Cue;
-    score = 0;
+    score = 8;
 }
 
 Pocket::Pocket(float xI, float yI){
     x = xI;
     y = yI;
-    r = 7;
+    r = 9;
 }
 
 void Pocket::render(){
     LCD.SetFontColor(BLACK);
     LCD.FillCircle(x,y,r);
 }
+void Board::checkWinner(){
+    //checks if the player is above the score to win, but also handles if the player should be allowed to hit the 8
+    Player* p1 = &(players.at(0));
+    Player* p2 = &(players.at(1));
+    
+    if(p1->score >= 7){
+        p1->col = Eight;
+    }
+    if(p2->score >= 7){
+        p2->col = Eight;
+    }
+    
+    if(p1->score >= 8){
+        state = '1';
+    }
+    if(p2->score >= 8){
+        state = '2';
+    }
+}
 
 void Board::scoring(){
-    //handles collisions with the pockets, returns whether or not someone has scored their color
+    //handles collisions with the pockets
     for(int i = 0; i < pockets.size(); i++){
         for(int j = 0; j < balls.size(); j++){
             //these to keep things tidy
@@ -321,9 +577,22 @@ void Board::scoring(){
             float hyp = dist(b->getPosX(), b->getPosY(), p->x, p->y);
             
             if(hyp < (b->getRadius() + p->r)){
-                if(b->getBallType() != Cue && (play->col == b->getBallType() || isFirst)){ //if the player scores a ball, other than the cue, and it is the correct color, they score
-                    play->hasScored = true;
-                    play->score++;
+                if(b->getBallType() == Eight && play->col != Eight){//if the eight ball is scored the game is over
+                    if(!turn){//whoever scored the 8 ball lost
+                        state = '2';
+                    }
+                    else{
+                        state = '1';
+                    }
+                }
+                else if(b->getBallType() != Cue){ //if the player scores a ball, other than the cue, and it is the correct color, they score
+                    if(play->col == b->getBallType() || isFirst){
+                        play->hasScored = true;
+                        play->score++;
+                    }
+                    else{
+                        players.at(!turn).score++;
+                    }
                     //printf("---------------------hasScored = %i ----------------\n", play->hasScored);
                 }
                 printf("DELETEEEE--------------\n");
@@ -617,16 +886,16 @@ Board::Board() {
     Ball eightBall = Ball(222, 150, 0, 0, Eight);
     balls.push_back(eightBall);
 
-    Pocket p1 = Pocket(9, 79);
+    Pocket p1 = Pocket(11, 81);
     pockets.push_back(p1);
 
-    Pocket p2 = Pocket(9, 230);
+    Pocket p2 = Pocket(11, 228);
     pockets.push_back(p2);
 
-    Pocket p3 = Pocket(310, 79);
+    Pocket p3 = Pocket(308, 81);
     pockets.push_back(p3);
     
-    Pocket p4 = Pocket(310, 230);
+    Pocket p4 = Pocket(308, 228);
     pockets.push_back(p4);
 
     Pocket p5 = Pocket(160, 79);
