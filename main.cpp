@@ -13,7 +13,7 @@
 #define SCREEN_HEIGHT 239
 
 #define FRIC .008
-#define TIME 120
+#define TIME 1
 
 #define CELLY_TIME 25 //the time between each ball creation for the celebrations
 
@@ -80,7 +80,7 @@ class Board {
         void collisions();
         void update();
 
-        void scoring();
+        void scoring(bool*, bool*);
 
         //returns true if there are any balls still moving
         bool checkMovingBalls();
@@ -114,6 +114,9 @@ class CelBalls {
 //global vars
 char state = 'm'; 
 char tempState = 'm';  
+bool scoredCue = false;
+bool scoredBall = false;
+
 bool turn = true; //start true because will be automattically switched
 bool isFirst = true;
 
@@ -189,7 +192,7 @@ int main() {
         else if(state == 'n'){
             LCD.Clear(BLACK);
             LCD.WriteAt("Time is up!", 100 ,20);
-            LCD.WriteAt("(No animation yall lost)", 50, 200);
+            LCD.WriteAt("(No animation yall lost)", 10, 200);
         }
         //draws credits
         else if(state == 'i'){
@@ -288,18 +291,25 @@ void retMenu(){
     //variables to track mouse and to keep positions straight
     int rectX = 2, rectY = 2, rectW = 16, rectH = 19;
     float x, y;
-    
+
+    bool t = LCD.Touch(&x, &y);
+
+    //get the postion of the touch, use if pressed
+    //if the mouse is clicked in the rectangle, go to the menu
+    if(x > rectX && x < (rectX + rectW) && y > rectY && y < (rectY + rectH)){
+        if(t){
+            state = 'h';
+        }
+        LCD.SetFontColor(RED);
+    }
+    else{
+        LCD.SetFontColor(WHITE);
+    }
+     
     //draw the return button in the top left
     LCD.DrawRectangle(rectX,rectY,rectW,rectH);
     LCD.WriteAt("M", rectX+1,rectY+2);
-
-    //get the postion of the touch, use if pressed
-    if(LCD.Touch(&x, &y)){
-        //if the mouse is clicked in the rectangle, go to the menu
-        if(x > rectX && x < (rectX + rectW) && y > rectY && y < (rectY + rectH)){
-            state = 'h';
-        }
-    }
+    LCD.SetFontColor(WHITE);
 }
 
   
@@ -307,13 +317,13 @@ void playing(Board& board) {
     //do the basic checks wvery cycle
     board.collisions();
     board.checkWalls();
-    board.scoring();
-    
+    board.scoring(&scoredCue, &scoredBall);
+
     //if nothing is moving then go through checks relating to scoring ect
     if (!board.checkMovingBalls() && (state == 'p' || state == 't')) {//only go through this if someone hasnt already won
         
         //if the player didnt score continur to next player turn
-        if(!board.players.at(turn).hasScored){
+        if(scoredCue || (!scoredBall && !scoredCue)){
             turn = !turn;//this happens here so the scratch function works right
         }
         
@@ -335,6 +345,8 @@ void playing(Board& board) {
         }
         //get user input
         takeInput(board, board.balls.at(cueId));
+        scoredCue = false;
+        scoredBall = false;
     }
 
     //check for the winner, then update positions and drraw the board
@@ -565,8 +577,9 @@ void Board::checkWinner(){
     }
 }
 
-void Board::scoring(){
+void Board::scoring(bool* scoredCue, bool* scoredBall){
     //handles collisions with the pockets
+    
     for(int i = 0; i < pockets.size(); i++){
         for(int j = 0; j < balls.size(); j++){
             //these to keep things tidy
@@ -585,22 +598,32 @@ void Board::scoring(){
                         state = '1';
                     }
                 }
-                else if(b->getBallType() != Cue){ //if the player scores a ball, other than the cue, and it is the correct color, they score
+                else if(b->getBallType() == Cue){ //if the player scores a ball, other than the cue, and it is the correct color, they score
+                    *scoredCue = true;
+                    if(play->col  == Eight){
+                        if(!turn) { //whoever scratched on the 8 ball lost
+                            state = '2';
+                        }
+                        else{
+                            state = '1';
+                        }
+                    }
+                }
+                else{
                     if(play->col == b->getBallType() || isFirst){
-                        play->hasScored = true;
                         play->score++;
+                        *scoredBall = true;
                     }
                     else{
                         players.at(!turn).score++;
                     }
-                    //printf("---------------------hasScored = %i ----------------\n", play->hasScored);
                 }
                 printf("DELETEEEE--------------\n");
                 balls.erase(balls.begin()+j);
             }
             
             //if first score set the color for the player
-            if(play->hasScored && isFirst){
+            if(*scoredBall && isFirst){
                 play->col = b->getBallType();
                 
                 if(b->getBallType() == Red){
