@@ -13,7 +13,7 @@
 #define SCREEN_HEIGHT 239
 
 #define FRIC .008
-#define TIME 1
+#define TIME 120
 
 #define CELLY_TIME 25 //the time between each ball creation for the celebrations
 
