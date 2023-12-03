@@ -395,7 +395,7 @@ void scratch(Board& board){
         while(!LCD.Touch(&x, &y)){
             
             board.render();//draw board to cover old cue drawings
-            
+            LCD.DrawLine(90, 81, 90, 229);
             //check to make sure the cue ball isnt placed within any other balls
             bool isWithin = false;
             for(int i = 0; i < board.balls.size(); i++){
@@ -405,7 +405,7 @@ void scratch(Board& board){
                 }
             }
             //only place the cue ball if it is within the allowed area, and not ontop of another ball
-            if((x > 11+r && x < 298-r && y > 81+r && y < 248) && !isWithin){
+            if((x > 10+r && x < 90-r && y > 80+r && y < 229-r) && !isWithin){
                 xP = x;
                 yP = y;
             }
@@ -532,7 +532,7 @@ void CelBalls::update(){
 Player::Player(){
     hasScored = false;
     col = Cue;
-    score = 8;
+    score = 0;
 }
 
 Pocket::Pocket(float xI, float yI){
