@@ -19,7 +19,6 @@
 
 //#define FRIC 0
 
-
 //enum for the type of the ball
 enum BallType {Blue, Red, Cue, Eight};
 
